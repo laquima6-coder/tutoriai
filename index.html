@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>TutorAI</title>
+<script>
+const CLAUDE_KEY='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';
+const ADMIN_U='tincho';
+const ADMIN_P='tutoriai2026';
+</script<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--or:#FF6B35;--gr:#00C896;--rd:#FF4757;--bg:#06080F;--bg2:#0C0F1A;--text:#E8EDF5;--muted:rgba(232,237,245,0.45);--border:rgba(255,255,255,0.07);--card:rgba(255,255,255,0.03)}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap');
+@keyframes shimmer{0%{background-position:-200% center}100%{background-position:200% center}}
+@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes glow{0%,100%{box-shadow:0 0 24px rgba(255,107,53,.4)}50%{box-shadow:0 0 48px rgba(255,107,53,.7)}}
+.shimmer{background:linear-gradient(90deg,var(--text) 0%,var(--or) 35%,#FFD166 65%,var(--text) 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shimmer 3s linear infinite}
+.spin-anim{animation:spin 1s linear infinite;display:inline-block}
+nav{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:rgba(6,8,15,.95);backdrop-filter:blur(20px);position:sticky;top:0;z-index:90;flex-wrap:wrap;gap:10px}
+.nav-icon{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--or),#FFD166);display:flex;align-items:center;justify-content:center;font-size:16px}
+.btn-p{background:linear-gradient(135deg,var(--or),#FF8C42);border:none;border-radius:7px;color:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600;padding:8px 18px;font-size:13px;transition:all .3s;box-shadow:0 0 18px rgba(255,107,53,.25)}
+.btn-p:hover{transform:translateY(-1px)}
+.btn-p:disabled{opacity:.5;cursor:not-allowed;transform:none;animation:none}
+.btn-o{background:transparent;border:1px solid var(--border);border-radius:7px;color:var(--muted);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;padding:8px 18px;font-size:13px}
+.btn-o:hover{border-color:rgba(255,255,255,.25);color:var(--text)}
+.hero{position:relative;padding:60px 20px 48px;text-align:center;overflow:hidden}
+.orb{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none}
+.badge-pill{display:inline-flex;align-items:center;gap:7px;background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.25);border-radius:100px;padding:5px 14px;margin-bottom:20px}
+.dot-pulse{width:5px;height:5px;border-radius:50%;background:var(--or);display:inline-block;animation:pulse 2s infinite}
+.hero h1{font-family:'Syne',sans-serif;font-size:clamp(32px,6vw,68px);line-height:1.04;margin-bottom:14px;font-weight:800}
+.hero-sub{font-size:15px;color:var(--muted);max-width:480px;margin:0 auto 28px;line-height:1.7}
+.stats{display:flex;justify-content:center;gap:32px;margin-bottom:32px;flex-wrap:wrap}
+.sv{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--or)}
+.sl{font-size:11px;color:var(--muted);margin-top:2px}
+.ct-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:600px;margin:0 auto 18px}
+.ct{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:12px 8px;text-align:center;cursor:pointer;transition:all .22s;position:relative}
+.ct:hover,.ct.on{border-color:rgba(255,107,53,.4);background:rgba(255,107,53,.07);transform:translateY(-2px)}
+.ct.on::after{content:'✓';position:absolute;top:6px;right:8px;font-size:10px;color:var(--or)}
+.mc{max-width:640px;margin:0 auto;background:var(--card);border:1px solid rgba(255,255,255,.09);border-radius:17px;padding:22px}
+.inp{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;padding:12px 15px;outline:none;transition:border-color .2s}
+.inp:focus{border-color:var(--or)}.inp::placeholder{color:rgba(232,237,245,.25)}
+.drop{border:2px dashed rgba(255,255,255,.11);border-radius:10px;padding:22px 16px;text-align:center;cursor:pointer;transition:all .2s}
+.drop:hover{border-color:var(--or);background:rgba(255,107,53,.04)}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+.opt-box{background:rgba(255,107,53,.05);border:1px solid rgba(255,107,53,.14);border-radius:9px;padding:10px 13px}
+.gen-btn{width:100%;background:linear-gradient(135deg,var(--or),#FF8C42);border:none;border-radius:9px;color:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:700;font-size:15px;padding:14px;margin-top:12px;transition:all .3s;animation:glow 3s ease infinite}
+.gen-btn:hover{transform:translateY(-1px)}
+.gen-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;animation:none}
+.step-r{display:flex;align-items:center;gap:11px;margin-bottom:10px}
+.sd{width:31px;height:31px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;transition:all .4s}
+.sd.p{background:rgba(255,255,255,.04);border:2px solid rgba(255,255,255,.09);color:rgba(232,237,245,.25)}
+.sd.a{background:rgba(255,107,53,.15);border:2px solid var(--or);color:var(--or)}
+.sd.d{background:var(--gr);border:2px solid var(--gr);color:#fff}
+.gr-pill{display:inline-flex;align-items:center;gap:5px;background:rgba(0,200,150,.08);border:1px solid rgba(0,200,150,.2);border-radius:100px;padding:3px 11px;margin-bottom:13px}
+.ai-result{background:rgba(255,255,255,.02);border:1px solid rgba(0,200,150,.18);border-radius:13px;padding:18px;animation:fadeUp .5s ease}
+.ai-hdr{display:flex;align-items:center;gap:9px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.ai-badge{background:rgba(0,200,150,.1);border:1px solid rgba(0,200,150,.25);border-radius:100px;padding:3px 10px;font-size:10px;color:var(--gr)}
+.sb{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:9px;padding:13px;margin-bottom:9px}
+.sb h4{font-size:11px;color:var(--or);margin-bottom:6px;font-family:'Syne',sans-serif}
+.sb p{font-size:12px;color:rgba(232,237,245,.8);line-height:1.7}
+.sb ul{padding-left:14px;margin-top:5px}
+.sb li{font-size:11px;color:var(--muted);line-height:1.8}
+.vid-prev{background:linear-gradient(135deg,rgba(255,107,53,.12),rgba(255,209,102,.07));border:1px solid rgba(255,107,53,.18);border-radius:11px;padding:16px;text-align:center;margin-bottom:12px}
+.vid-play{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--or),#FFD166);display:flex;align-items:center;justify-content:center;font-size:20px;margin:0 auto 8px;box-shadow:0 0 28px rgba(255,107,53,.4)}
+.ai-err{background:rgba(255,71,87,.07);border:1px solid rgba(255,71,87,.18);border-radius:9px;padding:12px 14px;font-size:12px;color:var(--rd);display:none}
+.ai-err.on{display:block;animation:fadeUp .3s ease}
+.sec{padding:40px 20px;border-top:1px solid var(--border)}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;max-width:800px;margin:0 auto}
+.plan{border:1px solid var(--border);border-radius:14px;padding:22px 18px;background:var(--card);transition:all .3s;position:relative;overflow:hidden}
+.plan.hl{border-color:var(--or);background:rgba(255,107,53,.06);box-shadow:0 0 44px rgba(255,107,53,.08)}
+.plan-badge{position:absolute;top:-1px;left:50%;transform:translateX(-50%);background:var(--or);color:#fff;padding:3px 12px;border-radius:0 0 7px 7px;font-size:9px;font-weight:700;white-space:nowrap}
+.plan-price{font-family:'Syne',sans-serif;font-size:32px;font-weight:800}
+.pf{display:flex;gap:6px;align-items:flex-start;margin-bottom:6px;font-size:11px;color:rgba(232,237,245,.7)}
+.footer{border-top:1px solid var(--border);padding:20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+#aLogin{display:flex;align-items:center;justify-content:center;min-height:80vh;padding:40px 20px}
+.alc{background:var(--card);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:36px 30px;width:100%;max-width:360px;text-align:center}
+.al-icon{width:52px;height:52px;border-radius:13px;margin:0 auto 14px;background:linear-gradient(135deg,var(--or),#FFD166);display:flex;align-items:center;justify-content:center;font-size:24px}
+.af{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;padding:11px 14px;outline:none;transition:border-color .2s;margin-bottom:10px}
+.af:focus{border-color:var(--or)}.af::placeholder{color:rgba(232,237,245,.25)}
+.alb{width:100%;background:linear-gradient(135deg,var(--or),#FF8C42);border:none;border-radius:8px;color:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:700;font-size:14px;padding:12px;transition:all .3s}
+.aerr{color:var(--rd);font-size:12px;margin-top:7px;display:none}
+#aApp{display:none}
+.al{display:flex;min-height:80vh}
+.asb{width:200px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:16px 0;flex-shrink:0}
+.asb-logo{display:flex;align-items:center;gap:8px;padding:0 14px 16px;border-bottom:1px solid var(--border)}
+.ab{font-size:9px;background:rgba(255,107,53,.14);color:var(--or);padding:2px 7px;border-radius:100px;margin-left:auto}
+.ans{padding:14px 10px 4px;font-size:9px;color:rgba(232,237,245,.22);letter-spacing:1.5px;text-transform:uppercase}
+.ani{display:flex;align-items:center;gap:9px;padding:8px 14px;cursor:pointer;color:var(--muted);font-size:12px;transition:all .2s;border-left:2px solid transparent;margin:1px 0}
+.ani:hover{color:var(--text);background:rgba(255,255,255,.03)}
+.ani.on{color:var(--or);background:rgba(255,107,53,.07);border-left-color:var(--or)}
+.asb-foot{margin-top:auto;padding:12px 14px;border-top:1px solid var(--border)}
+.alo{width:100%;background:rgba(255,71,87,.08);border:1px solid rgba(255,71,87,.17);border-radius:7px;color:var(--rd);cursor:pointer;font-family:'DM Sans',sans-serif;padding:8px;font-size:11px}
+.alive{width:6px;height:6px;border-radius:50%;background:var(--gr);display:inline-block;animation:pulse 2s infinite}
+.am{flex:1;padding:20px;overflow:auto}
+.ap{display:none}.ap.on{display:block;animation:fadeUp .4s ease}
+.asg{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:18px}
+.as{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:15px;transition:all .3s}
+.as:hover{border-color:rgba(255,107,53,.22);transform:translateY(-2px)}
+.as-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
+.as-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;margin-bottom:2px}
+.as-lbl{font-size:10px;color:var(--muted)}
+.trend{font-size:10px;padding:2px 7px;border-radius:100px}
+.tu{background:rgba(0,200,150,.1);color:var(--gr)}.td{background:rgba(255,71,87,.1);color:var(--rd)}
+.ac{background:var(--card);border:1px solid var(--border);border-radius:11px;overflow:hidden;margin-bottom:16px}
+.ac-hdr{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.ac-hdr h3{font-size:14px;font-weight:600}
+table{width:100%;border-collapse:collapse}
+th{padding:8px 16px;text-align:left;font-size:9px;color:rgba(232,237,245,.28);font-weight:400;letter-spacing:.5px;text-transform:uppercase;border-bottom:1px solid var(--border)}
+td{padding:10px 16px;font-size:11px;border-bottom:1px solid rgba(255,255,255,.03)}
+tr:last-child td{border-bottom:none}
+.bdg{display:inline-block;padding:2px 8px;border-radius:100px;font-size:10px}
+.active{background:rgba(0,200,150,.1);color:var(--gr)}.trial{background:rgba(255,209,102,.1);color:#FFD166}.cancelled{background:rgba(255,71,87,.1);color:var(--rd)}
+.bpro{background:rgba(255,107,53,.12);color:var(--or)}.bbasic{background:rgba(75,158,255,.1);color:#4B9EFF}.bent{background:rgba(167,139,250,.12);color:#A78BFA}
+.achart{padding:16px;height:150px;display:flex;align-items:flex-end;gap:5px}
+.barcol{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1}
+.bar{width:100%;border-radius:4px 4px 0 0;min-height:3px;transition:height .7s ease;background:linear-gradient(to top,rgba(255,107,53,.3),var(--or))}
+.barlbl{font-size:9px;color:var(--muted)}
+.notif{position:fixed;top:16px;right:16px;z-index:9999;background:#141E35;border:1px solid var(--gr);border-radius:10px;padding:10px 14px;font-size:11px;color:var(--gr);display:none;box-shadow:0 10px 40px rgba(0,0,0,.4);max-width:260px}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:rgba(255,107,53,.22);border-radius:2px}
+</style>
+</head<body>
+<nav>
+  <div style="display:flex;align-items:center;gap:9px">
+    <div class="nav-icon">🎬</div>
+    <span style="font-family:'Syne',sans-serif;font-size:17px;font-weight:800">TutorAI</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <button class="btn-o" id="adminBtn">Admin</button>
+    <button class="btn-p">Demo →</button>
+  </div>
+</nav>
+
+<div id="vLand">
+<div class="hero">
+  <div class="orb" style="width:400px;height:400px;background:rgba(255,107,53,.09);top:-130px;left:50%;transform:translateX(-50%)"></div>
+  <div style="position:relative;z-index:2">
+    <div class="badge-pill"><span class="dot-pulse"></span><span style="font-size:12px;color:var(--or)">✦ IA real · Claude · 12 idiomas</span></div>
+    <h1>Aprende cualquier cosa<br><span class="shimmer">10× más rápido</span><br>con videos IA</h1>
+    <p class="hero-sub">Pegá un link, subí un PDF o código. La IA de Claude genera un guión tutorial profesional en segundos.</p>
+    <div class="stats">
+      <div><div class="sv" id="sc1">0</div><div class="sl">Videos generados</div></div>
+      <div><div class="sv" id="sc2">0</div><div class="sl">Empresas activas</div></div>
+      <div><div class="sv">12</div><div class="sl">Idiomas</div></div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:10px">¿Qué querés convertir en tutorial?</p>
+    <div class="ct-grid">
+      <div class="ct on" onclick="pickCT(this,'link')"><div style="font-size:22px;margin-bottom:4px">🔗</div><div style="font-size:11px;font-weight:600">Link / URL</div></div>
+      <div class="ct" onclick="pickCT(this,'pdf')"><div style="font-size:22px;margin-bottom:4px">📄</div><div style="font-size:11px;font-weight:600">PDF / Word</div></div>
+      <div class="ct" onclick="pickCT(this,'code')"><div style="font-size:22px;margin-bottom:4px">💻</div><div style="font-size:11px;font-weight:600">Código</div></div>
+      <div class="ct" onclick="pickCT(this,'api')"><div style="font-size:22px;margin-bottom:4px">🔌</div><div style="font-size:11px;font-weight:600">API</div></div>
+      <div class="ct" onclick="pickCT(this,'notion')"><div style="font-size:22px;margin-bottom:4px">📝</div><div style="font-size:11px;font-weight:600">Notion</div></div>
+      <div class="ct" onclick="pickCT(this,'yt')"><div style="font-size:22px;margin-bottom:4px">▶️</div><div style="font-size:11px;font-weight:600">YouTube</div></div>
+    </div>
+    <div class="mc">
+      <div id="pIn">
+        <div id="dynIn" style="margin-bottom:11px"></div>
+        <div class="opts">
+          <div class="opt-box">
+            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:6px">🌍 Idioma:</label>
+            <select class="inp" id="langS" style="padding:8px;font-size:12px">
+              <option value="es">🇪🇸 Español</option>
+              <option value="en">🇺🇸 English</option>
+              <option value="pt">🇧🇷 Português</option>
+              <option value="fr">🇫🇷 Français</option>
+              <option value="de">🇩🇪 Deutsch</option>
+              <option value="zh">🇨🇳 中文</option>
+              <option value="ja">🇯🇵 日本語</option>
+              <option value="it">🇮🇹 Italiano</option>
+              <option value="ru">🇷🇺 Русский</option>
+              <option value="ar">🇸🇦 العربية</option>
+              <option value="ko">🇰🇷 한국어</option>
+              <option value="hi">🇮🇳 हिन्दी</option>
+            </select>
+          </div>
+          <div class="opt-box">
+            <label style="font-size:11px;color:var(--muted);display:block;margin-bottom:6px">🎨 Estilo:</label>
+            <select class="inp" id="styleS" style="padding:8px;font-size:12px">
+              <option value="educativo">🎓 Educativo</option>
+              <option value="corporativo">💼 Corporativo</option>
+              <option value="rapido">⚡ Rápido</option>
+              <option value="detallado">🎯 Detallado</option>
+            </select>
+          </div>
+        </div>
+        <button class="gen-btn" onclick="startAI()" id="genBtn">✨ Generar tutorial con IA real</button>
+        <p style="font-size:10px;color:rgba(232,237,245,.18);margin-top:8px;text-align:center">Gratis hasta 3 videos · IA real de Claude · Listo en segundos</p>
+      </div>
+      <div id="pGen" style="display:none;padding:10px 0">
+        <p style="font-family:'Syne',sans-serif;font-size:18px;margin-bottom:6px">🧠 La IA está trabajando...</p>
+        <div class="gr-pill" style="margin-bottom:14px"><span id="oFlagG">🇪🇸</span><span style="font-size:11px;color:var(--gr)" id="trTxt">Generando...</span></div>
+        <div id="stWrap"></div>
+      </div>
+      <div id="pRes" style="display:none">
+        <div class="vid-prev">
+          <div class="vid-play">▶️</div>
+          <p style="font-family:'Syne',sans-serif;font-size:14px;margin-bottom:3px" id="vidTitle">Tutorial generado con IA</p>
+          <p style="font-size:11px;color:var(--muted)">HD · Subtítulos · Voz IA · <span id="durSpan">4:00</span></p>
+        </div>
+        <div class="ai-result" id="aiBox">
+          <div class="ai-hdr">
+            <span style="font-size:18px">🧠</span>
+            <div><p style="font-size:12px;font-weight:600">Guión generado por Claude IA</p><p style="font-size:10px;color:var(--muted)">Análisis real de tu contenido</p></div>
+            <span class="ai-badge">IA Real ✓</span>
+          </div>
+          <div id="aiContent"></div>
+        </div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:11px">
+          <button class="btn-p" style="flex:1;padding:10px;font-size:12px">⬇️ Descargar</button>
+          <button class="btn-p" style="flex:1;padding:10px;font-size:12px;background:linear-gradient(135deg,#7C3AED,#A78BFA)">📤 Compartir</button>
+          <button class="btn-o" style="flex:1;padding:10px;font-size:12px" onclick="resetApp()">+ Nuevo</button>
+        </div>
+      </div>
+      <div class="ai-err" id="aiErr">⚠️ <span id="errTxt">Error.</span><br><button class="btn-o" style="margin-top:8px;font-size:11px;padding:5px 12px" onclick="resetApp()">Intentar de nuevo</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="sec" style="background:var(--bg2)">
+  <h2 style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;text-align:center;margin-bottom:8px">Planes simples</h2>
+  <p style="text-align:center;color:var(--muted);margin-bottom:28px;font-size:13px">Sin contratos. Cancelá cuando quieras.</p>
+  <div class="plans">
+    <div class="plan"><div style="color:var(--muted);font-size:11px;margin-bottom:4px">Básico</div><div style="display:flex;align-items:baseline;gap:3px;margin-bottom:14px"><span class="plan-price">$19</span><span style="color:var(--muted);font-size:11px">/mes</span></div><div style="margin-bottom:16px"><div class="pf"><span style="color:var(--gr)">✓</span>10 videos/mes</div><div class="pf"><span style="color:var(--gr)">✓</span>1 idioma</div><div class="pf"><span style="color:var(--gr)">✓</span>IA real incluida</div></div><button class="btn-o" style="width:100%;padding:9px;font-size:12px;border-radius:7px">Empezar gratis</button></div>
+    <div class="plan hl"><div class="plan-badge">MÁS POPULAR</div><div style="color:var(--muted);font-size:11px;margin-bottom:4px">Pro</div><div style="display:flex;align-items:baseline;gap:3px;margin-bottom:14px"><span class="plan-price">$79</span><span style="color:var(--muted);font-size:11px">/mes</span></div><div style="margin-bottom:16px"><div class="pf"><span style="color:var(--gr)">✓</span>50 videos/mes</div><div class="pf"><span style="color:var(--gr)">✓</span>5 idiomas</div><div class="pf"><span style="color:var(--gr)">✓</span>Tu marca</div><div class="pf"><span style="color:var(--gr)">✓</span>Analytics</div></div><button class="btn-p" style="width:100%;padding:9px;font-size:12px;border-radius:7px">Empezar</button></div>
+    <div class="plan"><div style="color:var(--muted);font-size:11px;margin-bottom:4px">Enterprise</div><div style="display:flex;align-items:baseline;gap:3px;margin-bottom:14px"><span class="plan-price">$299</span><span style="color:var(--muted);font-size:11px">/mes</span></div><div style="margin-bottom:16px"><div class="pf"><span style="color:var(--gr)">✓</span>Ilimitado</div><div class="pf"><span style="color:var(--gr)">✓</span>12 idiomas</div><div class="pf"><span style="color:var(--gr)">✓</span>Marca completa</div><div class="pf"><span style="color:var(--gr)">✓</span>Soporte dedicado</div></div><button class="btn-o" style="width:100%;padding:9px;font-size:12px;border-radius:7px">Contactar</button></div>
+  </div>
+</div>
+
+<div class="footer">
+  <div style="display:flex;align-items:center;gap:9px"><div class="nav-icon" style="width:26px;height:26px;font-size:12px">🎬</div><span style="font-family:'Syne',sans-serif;font-size:14px;color:var(--muted)">TutorAI</span></div>
+  <p style="font-size:10px;color:rgba(232,237,245,.18)">© 2026 TutorAI · Powered by Claude AI</p>
+</div>
+</div>
+
+<div id="vAdmin" style="display:none">
+<div id="aLogin">
+  <div class="alc">
+    <div class="al-icon">🔐</div>
+    <h2 style="font-family:'Syne',sans-serif;font-size:22px;margin-bottom:4px">Panel Privado</h2>
+    <p style="color:var(--muted);font-size:12px;margin-bottom:22px">Solo el dueño de TutorAI</p>
+    <input class="af" id="aUser" type="text" placeholder="Usuario" autocomplete="off"/>
+    <input class="af" id="aPass" type="password" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="alb" onclick="doLogin()">🚀 Entrar</button>
+    <p class="aerr" id="aerr">❌ Credenciales incorrectas</p>
+    <p style="font-size:10px;color:rgba(232,237,245,.18);margin-top:11px">Solo propietario</p>
+  </div>
+</div>
+<div id="aApp">
+  <div class="al">
+    <aside class="asb">
+      <div class="asb-logo"><div class="nav-icon" style="width:28px;height:28px;font-size:13px">🎬</div><span style="font-family:'Syne',sans-serif;font-size:15px;font-weight:800">TutorAI</span><span class="ab">ADMIN</span></div>
+      <div class="ans">Principal</div>
+      <div class="ani on" onclick="ap('dash',this)"><span>📊</span>Dashboard</div>
+      <div class="ani" onclick="ap('clients',this)"><span>👥</span>Clientes</div>
+      <div class="ani" onclick="ap('videos',this)"><span>🎬</span>Videos</div>
+      <div class="ani" onclick="ap('revenue',this)"><span>💰</span>Ingresos</div>
+      <div class="ani" onclick="ap('support',this)"><span>🎧</span>Soporte</div>
+      <div class="ani" onclick="showLand()"><span>🌐</span>Ver app</div>
+      <div class="asb-foot">
+        <p style="font-size:10px;color:var(--muted);margin-bottom:6px;text-align:center"><span class="alive"></span> Sistema activo</p>
+        <button class="alo" onclick="doLogout()">🚪 Cerrar sesión</button>
+      </div>
+    </aside>
+    <main class="am">
+      <div class="ap on" id="ap-dash">
+        <div style="margin-bottom:20px"><h1 style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin-bottom:2px">Dashboard</h1><p style="color:var(--muted);font-size:12px" id="aDate"></p></div>
+        <div class="asg">
+          <div class="as"><div class="as-top"><span style="font-size:16px">👥</span><span class="trend tu">↑ +12%</span></div><div class="as-val">47</div><div class="as-lbl">Clientes activos</div></div>
+          <div class="as"><div class="as-top"><span style="font-size:16px">💰</span><span class="trend tu">↑ +8%</span></div><div class="as-val">$3,720</div><div class="as-lbl">Ingresos/mes</div></div>
+          <div class="as"><div class="as-top"><span style="font-size:16px">🎬</span><span class="trend tu">↑ +23%</span></div><div class="as-val">1,248</div><div class="as-lbl">Videos generados</div></div>
+          <div class="as"><div class="as-top"><span style="font-size:16px">🧠</span><span class="trend tu">Online</span></div><div class="as-val">94%</div><div class="as-lbl">IA activa</div></div>
+        </div>
+        <div class="ac"><div class="ac-hdr"><h3>📈 Ingresos</h3></div><div class="achart" id="mainChart"></div></div>
+        <div class="ac"><div class="ac-hdr"><h3>🆕 Clientes recientes</h3></div><table><thead><tr><th>Cliente</th><th>Plan</th><th>Estado</th><th>$/mes</th></tr></thead><tbody id="rTbl"></tbody></table></div>
+      </div>
+      <div class="ap" id="ap-clients">
+        <div style="margin-bottom:20px"><h1 style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800">Clientes</h1></div>
+        <div class="ac"><div class="ac-hdr"><h3>👥 Todos (47)</h3></div><table><thead><tr><th>Cliente</th><th>Plan</th><th>Estado</th><th>$/mes</th></tr></thead><tbody id="aTbl"></tbody></table></div>
+      </div>
+      <div class="ap" id="ap-videos">
+        <div style="margin-bottom:20px"><h1 style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800">Videos</h1></div>
+        <div class="asg" style="grid-template-columns:repeat(3,1fr)">
+          <div class="as"><div class="as-top"><span>📄</span></div><div class="as-val">612</div><div class="as-lbl">PDF</div></div>
+          <div class="as"><div class="as-top"><span>🔗</span></div><div class="as-val">398</div><div class="as-lbl">Link</div></div>
+          <div class="as"><div class="as-top"><span>💻</span></div><div class="as-val">238</div><div class="as-lbl">Código</div></div>
+        </div>
+        <div class="ac"><div class="ac-hdr"><h3>🎬 Recientes</h3></div><table><thead><tr><th>Título</th><th>Cliente</th><th>Duración</th></tr></thead><tbody id="vTbl"></tbody></table></div>
+      </div>
+      <div class="ap" id="ap-revenue">
+        <div style="margin-bottom:20px"><h1 style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800">Ingresos</h1></div>
+        <div class="asg">
+          <div class="as"><div class="as-top"><span>📅</span><span class="trend tu">↑ +8%</span></div><div class="as-val">$3,720</div><div class="as-lbl">Este mes</div></div>
+          <div class="as"><div class="as-top"><span>📆</span></div><div class="as-val">$38,940</div><div class="as-lbl">Este año</div></div>
+          <div class="as"><div class="as-top"><span>🎯</span></div><div class="as-val">74%</div><div class="as-lbl">Meta alcanzada</div></div>
+        </div>
+      </div>
+      <div class="ap" id="ap-support">
+        <div style="margin-bottom:20px"><h1 style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800">Soporte</h1></div>
+        <div class="asg" style="grid-template-columns:repeat(3,1fr)">
+          <div class="as"><div class="as-top"><span>🔴</span></div><div class="as-val">3</div><div class="as-lbl">Urgentes</div></div>
+          <div class="as"><div class="as-top"><span>🟡</span></div><div class="as-val">7</div><div class="as-lbl">En proceso</div></div>
+          <div class="as"><div class="as-top"><span>🟢</span></div><div class="as-val">142</div><div class="as-lbl">Resueltos</div></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+</div>
+
+<div class="notif" id="notif"></div>
+
+<script>
+const LANGS={es:{f:'🇪🇸',l:'Español'},en:{f:'🇺🇸',l:'English'},pt:{f:'🇧🇷',l:'Português'},fr:{f:'🇫🇷',l:'Français'},de:{f:'🇩🇪',l:'Deutsch'},zh:{f:'🇨🇳',l:'中文'},ja:{f:'🇯🇵',l:'日本語'},it:{f:'🇮🇹',l:'Italiano'},ru:{f:'🇷🇺',l:'Русский'},ar:{f:'🇸🇦',l:'العربية'},ko:{f:'🇰🇷',l:'한국어'},hi:{f:'🇮🇳',l:'हिन्दी'}};
+let curCT='link',genTimers=[];
+const CT_PH={link:'https://docs.miempresa.com/manual...',pdf:'',code:'// Pegá tu código aquí',api:'https://api.miempresa.com/swagger.json',notion:'https://notion.so/mi-workspace/...',yt:'https://youtube.com/watch?v=...'};
+
+function showLand(){document.getElementById('vLand').style.display='block';document.getElementById('vAdmin').style.display='none'}
+function showAdmin(){document.getElementById('vLand').style.display='none';document.getElementById('vAdmin').style.display='block'}
+document.getElementById('adminBtn').onclick=showAdmin;
+
+function pickCT(el,type){document.querySelectorAll('.ct').forEach(c=>c.classList.remove('on'));el.classList.add('on');curCT=type;buildDynInput(type)}
+function buildDynInput(type){
+  const c=document.getElementById('dynIn');if(!c)return;
+  if(type==='pdf'){c.innerHTML=`<div class="drop" onclick="document.getElementById('fInp').click()"><div style="font-size:26px;margin-bottom:5px">📂</div><p style="font-size:12px;color:var(--muted)" id="dropTxt">Tocá para seleccionar tu archivo</p><input type="file" id="fInp" accept=".pdf,.doc,.docx,.txt" style="display:none" onchange="document.getElementById('dropTxt').textContent='✅ '+this.files[0].name"/></div>`}
+  else if(type==='code'){c.innerHTML=`<textarea class="inp" id="mainInp" rows="5" placeholder="${CT_PH[type]}" style="resize:vertical;font-family:monospace;font-size:12px"></textarea>`}
+  else{c.innerHTML=`<input class="inp" type="text" id="mainInp" placeholder="${CT_PH[type]||'Pegá el link aquí...'}"/>`}
+}
+
+const SICONS=['🔍','🧠','📝','🎙️','🎬'];
+const SLABELS=['Leyendo contenido','Analizando con IA','Creando guión','Optimizando','Finalizando'];
+function buildSteps(){document.getElementById('stWrap').innerHTML=SLABELS.map((l,i)=>`<div class="step-r"><div class="sd p" id="sd${i+1}">${SICONS[i]}</div><span style="font-size:12px;color:rgba(232,237,245,.25)" id="sl${i+1}">${l}</span><span style="font-size:10px;margin-left:auto;display:none" id="ss${i+1}"></span></div>`).join('')}
+function updStep(cur,tot){for(let i=1;i<=tot;i++){const d=document.getElementById(`sd${i}`),l=document.getElementById(`sl${i}`),s=document.getElementById(`ss${i}`);if(!d)continue;if(i<cur){d.className='sd d';d.innerHTML='✓';l.style.color='var(--text)';s.style.display='inline';s.style.color='var(--gr)';s.textContent='✓ Listo'}else if(i===cur){d.className='sd a';d.innerHTML='<span class="spin-anim">◌</span>';l.style.color='var(--or)';l.style.fontWeight='500';s.style.display='inline';s.style.color='rgba(255,107,53,.6)';s.textContent='En proceso...'}else{d.className='sd p';l.style.color='rgba(232,237,245,.25)';l.style.fontWeight='400';s.style.display='none'}}}
+
+async function startAI(){
+  const mainInp=document.getElementById('mainInp');
+  const fInp=document.getElementById('fInp');
+  const hasText=mainInp&&mainInp.value.trim();
+  const hasFile=fInp&&fInp.files&&fInp.files[0];
+  if(!hasText&&!hasFile){showN('⚠️ Ingresá un link o seleccioná un archivo');return}
+  const userContent=hasText?mainInp.value.trim():(hasFile?`Archivo: ${fInp.files[0].name}`:'contenido');
+  const langCode=document.getElementById('langS').value;
+  const langObj=LANGS[langCode]||LANGS['es'];
+  const style=document.getElementById('styleS').value;
+  const styleDesc={educativo:'claro y didáctico con ejemplos paso a paso',corporativo:'profesional y directo enfocado en productividad',rapido:'muy conciso máximo 2 minutos solo puntos clave',detallado:'completo y exhaustivo cubriendo todos los detalles'}[style];
+  const ctDesc={link:'página web o documentación',pdf:'documento PDF o Word',code:'código fuente',api:'documentación de API',notion:'página de Notion',yt:'video de YouTube'}[curCT]||'contenido';
+
+  document.getElementById('pIn').style.display='none';
+  document.getElementById('pGen').style.display='block';
+  document.getElementById('pRes').style.display='none';
+  document.getElementById('aiErr').classList.remove('on');
+  document.getElementById('oFlagG').textContent=langObj.f;
+  document.getElementById('trTxt').textContent=`Generando en ${langObj.l}...`;
+  buildSteps();
+  genTimers.forEach(clearTimeout);genTimers=[];
+  [0,900,1800,2700].forEach((ms,i)=>genTimers.push(setTimeout(()=>updStep(i+1,5),ms)));
+
+  try{
+    const prompt=`Eres experto en crear guiones para videos tutoriales empresariales.\n\nEl usuario te compartió este ${ctDesc}:\n---\n${userContent}\n---\n\nIdioma de salida: ${langObj.l}\nEstilo: ${styleDesc}\n\nRespondé SOLO con JSON válido sin markdown:\n{\n  "titulo": "Título atractivo del tutorial",\n  "duracion": "X:XX",\n  "descripcion": "Una línea sobre qué aprenderá el espectador",\n  "secciones": [\n    {\n      "nombre": "Nombre de sección",\n      "guion": "Texto que narrará el presentador 2-3 oraciones nat
