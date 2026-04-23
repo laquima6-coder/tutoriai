@@ -8,7 +8,7 @@
 const CLAUDE_KEY='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';
 const ADMIN_U='tincho';
 const ADMIN_P='tutoriai2026';
-</script<style>
+</script><style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--or:#FF6B35;--gr:#00C896;--rd:#FF4757;--bg:#06080F;--bg2:#0C0F1A;--text:#E8EDF5;--muted:rgba(232,237,245,0.45);--border:rgba(255,255,255,0.07);--card:rgba(255,255,255,0.03)}
 body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}
@@ -358,4 +358,5 @@ async function startAI(){
   [0,900,1800,2700].forEach((ms,i)=>genTimers.push(setTimeout(()=>updStep(i+1,5),ms)));
 
   try{
-    const prompt=`Eres experto en crear guiones para videos tutoriales empresariales.\n\nEl usuario te compartió este ${ctDesc}:\n---\n${userContent}\n---\n\nIdioma de salida: ${langObj.l}\nEstilo: ${styleDesc}\n\nRespondé SOLO con JSON válido sin markdown:\n{\n  "titulo": "Título atractivo del tutorial",\n  "duracion": "X:XX",\n  "descripcion": "Una línea sobre qué aprenderá el espectador",\n  "secciones": [\n    {\n      "nombre": "Nombre de sección",\n      "guion": "Texto que narrará el presentador 2-3 oraciones nat
+    const prompt=`Eres experto en crear guiones para videos tutoriales empresariales.\n\nEl usuario te compartió este ${ctDesc}:\n---\n${userContent}\n---\n\nIdioma de salida: ${langObj.l}\nEstilo: ${styleDesc}\n\nRespondé SOLO con JSON válido sin markdown:\n{\n  "titulo": "Título atractivo del tutorial",\n  "duracion": "X:XX",\n  "descripcion": "Una línea sobre qué aprenderá el espectador",\n  "secciones": [\n    {\n      "nombre": "Nombre de sección",\n      "guion": "Texto que narrará el presentador 2-3 oraciones natbuildDynInput('link');runCounters();
+</script></body></html>
