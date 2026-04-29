@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#07090F"/>
+<title>TutorAI — Capacitación con IA</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07090F;--surf:#0C1018;--card:#111520;--bdr:#1C2438;
+  --acc:#5B7CFA;--v2:#8B5CF6;--grn:#10B981;--org:#F59E0B;--red:#EF4444;
+  --txt:#DDE4F5;--mut:#4A5A7A;--lt:#8A9AC0;
+  --grad:linear-gradient(135deg,#5B7CFA,#8B5CF6);
+}
+html,body{min-height:100%;background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px}
+button{cursor:pointer;font-family:inherit;border:none;outline:none}
+input,select,textarea{font-family:inherit;outline:none}
+a{text-decoration:none}
+
+/* LAYOUT */
+.hidden{display:none!important}
+.page{min-height:100vh}
+
+/* AUTH */
+#auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg);position:relative;overflow:hidden}
+.auth-orb{position:absolute;border-radius:50%;filter:blur(120px);pointer-events:none}
+.auth-box{background:rgba(12,16,24,.97);border:1px solid var(--bdr);border-radius:22px;width:100%;max-width:420px;padding:32px;position:relative;z-index:1}
+.auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:24px;justify-content:center}
+.auth-mark{width:44px;height:44px;background:var(--grad);border-radius:13px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:20px;color:#fff}
+.auth-brand{font-size:22px;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.auth-h{font-size:24px;font-weight:800;margin-bottom:4px}
+.auth-s{color:var(--mut);font-size:13px;margin-bottom:20px}
+.auth-tabs{display:flex;background:var(--card);border:1px solid var(--bdr);border-radius:9px;padding:3px;margin-bottom:18px}
+.auth-tab{flex:1;padding:8px;border-radius:7px;font-size:13px;font-weight:600;background:none;color:var(--mut);transition:.15s}
+.auth-tab.on{background:var(--grad);color:#fff}
+.hints{background:rgba(91,124,250,.07);border:1px solid rgba(91,124,250,.15);border-radius:9px;padding:12px;margin-bottom:16px;font-size:12px;color:var(--lt);line-height:1.8}
+.hints strong{color:var(--acc)}
+.fg{margin-bottom:13px}
+.fg label{display:block;font-size:10px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px}
+.fg input,.fg select{width:100%;background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:9px 12px;color:var(--txt);font-size:13px;transition:.15s}
+.fg input:focus,.fg select:focus{border-color:var(--acc)}
+.err-msg{color:var(--red);font-size:12px;font-weight:600;margin-bottom:10px}
+.dvd{display:flex;align-items:center;gap:9px;margin:13px 0;color:var(--mut);font-size:12px}
+.dvd::before,.dvd::after{content:'';flex:1;height:1px;background:var(--bdr)}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:13px;font-weight:600;transition:.15s;border:none}
+.btn-p{background:var(--grad);color:#fff}
+.btn-p:hover{opacity:.88}
+.btn-s{background:var(--card);color:var(--txt);border:1px solid var(--bdr)}
+.btn-s:hover{border-color:var(--acc);color:var(--acc)}
+.btn-d{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.btn-full{width:100%;padding:11px}
+.btn-sm{padding:5px 12px;font-size:12px}
+
+/* LAYOUT */
+.shell{display:flex;min-height:100vh}
+.sidebar{width:220px;background:var(--surf);border-right:1px solid var(--bdr);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;overflow-y:auto}
+.main-area{margin-left:220px;display:flex;flex-direction:column;min-height:100vh}
+.topbar{height:54px;background:rgba(12,16,24,.95);border-bottom:1px solid var(--bdr);display:flex;align-items:center;padding:0 18px;gap:10px;position:sticky;top:0;z-index:50}
+.content-area{padding:20px;flex:1}
+
+/* SIDEBAR */
+.logo-row{padding:14px 16px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--bdr)}
+.logo-dot{width:30px;height:30px;background:var(--grad);border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:13px;color:#fff;flex-shrink:0}
+.logo-name{font-size:15px;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.plan-pill{font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px;margin-left:auto;text-transform:uppercase}
+.nav-area{padding:8px 6px;flex:1}
+.nav-sec{font-size:9px;font-weight:700;letter-spacing:1.5px;color:var(--mut);padding:9px 8px 4px;text-transform:uppercase}
+.nav-btn{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:8px;font-size:13px;font-weight:500;color:var(--mut);transition:.14s;margin-bottom:1px;background:none;width:100%;text-align:left;border:none}
+.nav-btn:hover{background:rgba(91,124,250,.08);color:var(--txt)}
+.nav-btn.on{background:rgba(91,124,250,.14);color:var(--acc);font-weight:600}
+.nav-badge{margin-left:auto;background:var(--acc);color:#fff;border-radius:20px;padding:1px 6px;font-size:9px;font-weight:700}
+.nav-badge-red{background:var(--red)}
+.sb-foot{padding:10px;border-top:1px solid var(--bdr)}
+.user-card{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;background:var(--card)}
+.ava{width:30px;height:30px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;color:#fff}
+
+/* TOPBAR */
+.search-bar{flex:1;max-width:340px;display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:6px 11px}
+.search-bar input{background:none;border:none;color:var(--txt);font-size:13px;flex:1;outline:none}
+.icon-btn{width:32px;height:32px;border-radius:7px;background:var(--card);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;color:var(--mut);transition:.14s;font-size:15px}
+.icon-btn:hover{color:var(--txt);border-color:var(--acc)}
+
+/* STATS */
+.stat-grid{display:grid;gap:12px;margin-bottom:18px}
+.sg4{grid-template-columns:repeat(4,1fr)}
+.sg3{grid-template-columns:repeat(3,1fr)}
+.sg2{grid-template-columns:repeat(2,1fr)}
+.stat-card{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:15px;border-top:2px solid var(--acc)}
+.stat-label{font-size:10px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+.stat-val{font-size:26px;font-weight:800}
+.stat-trend{font-size:11px;font-weight:600;margin-top:3px;color:var(--grn)}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--bdr);border-radius:12px}
+.card-head{padding:13px 16px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-weight:700;font-size:13px}
+.card-body{padding:15px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);padding:8px 12px;text-align:left;border-bottom:1px solid var(--bdr)}
+td{padding:9px 12px;border-bottom:1px solid rgba(28,36,56,.5);font-size:12px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(91,124,250,.03)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:9.5px;font-weight:700}
+.b-grn{background:rgba(16,185,129,.12);color:var(--grn)}
+.b-org{background:rgba(245,158,11,.12);color:var(--org)}
+.b-blue{background:rgba(91,124,250,.12);color:var(--acc)}
+.b-purple{background:rgba(139,92,246,.12);color:var(--v2)}
+.b-red{background:rgba(239,68,68,.12);color:var(--red)}
+.b-gray{background:rgba(74,90,122,.12);color:var(--mut)}
+.tag{display:inline-flex;padding:1px 6px;border-radius:4px;font-size:9.5px;font-weight:600;background:rgba(91,124,250,.1);color:var(--acc);margin:1px}
+
+/* TUT CARDS */
+.tut-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:13px}
+.tut-card{background:var(--card);border:1px solid var(--bdr);border-radius:12px;overflow:hidden;transition:.18s;cursor:pointer}
+.tut-card:hover{border-color:rgba(91,124,250,.4);transform:translateY(-2px)}
+.tut-thumb{height:88px;display:flex;align-items:center;justify-content:center;font-size:36px;position:relative}
+.tut-body{padding:12px}
+.tut-title{font-weight:700;font-size:13px;margin-bottom:5px;line-height:1.4}
+.tut-meta{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}
+.tut-stats{display:flex;justify-content:space-between;font-size:10px;color:var(--mut);margin-bottom:8px}
+.tut-actions{display:flex;gap:4px;flex-wrap:wrap}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(5px)}
+.modal{background:var(--surf);border:1px solid var(--bdr);border-radius:18px;width:100%;max-width:600px;max-height:92vh;overflow-y:auto;animation:pop .2s ease}
+.modal-lg{max-width:740px}
+@keyframes pop{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.modal-head{padding:16px 19px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-size:16px;font-weight:800}
+.modal-body{padding:18px}
+.modal-foot{padding:13px 19px;border-top:1px solid var(--bdr);display:flex;gap:8px;justify-content:flex-end}
+
+/* FORM */
+.form-group{margin-bottom:13px}
+.form-group label{display:block;font-size:10px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px}
+.form-group input,.form-group select,.form-group textarea{width:100%;background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:8px 12px;color:var(--txt);font-size:13px;transition:.15s}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--acc)}
+.form-group textarea{resize:vertical;min-height:70px}
+select option{background:var(--card)}
+
+/* SOURCE GRID */
+.src-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:13px}
+.src-item{background:var(--card);border:1.5px solid var(--bdr);border-radius:9px;padding:10px 7px;text-align:center;cursor:pointer;transition:.14s}
+.src-item:hover,.src-item.on{border-color:var(--acc);background:rgba(91,124,250,.06)}
+.src-item.on{box-shadow:0 0 0 2px rgba(91,124,250,.15)}
+.out-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.out-item{background:var(--card);border:1.5px solid var(--bdr);border-radius:9px;padding:10px;cursor:pointer;transition:.14s;display:flex;flex-direction:column;gap:3px}
+.out-item:hover,.out-item.on{border-color:var(--v2);background:rgba(139,92,246,.06)}
+.out-item.on{box-shadow:0 0 0 2px rgba(139,92,246,.12)}
+.drop-zone{border:2px dashed var(--bdr);border-radius:9px;padding:24px;text-align:center;color:var(--mut)}
+
+/* AI LOADER */
+.ai-loader{display:flex;flex-direction:column;align-items:center;gap:12px;padding:30px;text-align:center}
+.ai-orb{width:60px;height:60px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:26px;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+.ai-step{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;color:var(--mut)}
+.ai-step.done{color:var(--grn)}.ai-step.cur{color:var(--txt);font-weight:600}
+.prog-bar{height:4px;background:var(--bdr);border-radius:3px;overflow:hidden;margin:5px 0}
+.prog-fill{height:100%;border-radius:3px;background:var(--grad);transition:width .3s}
+
+/* STEP BOXES */
+.step-box{background:var(--bg);border-left:3px solid var(--acc);border-radius:0 8px 8px 0;padding:10px 13px;margin-bottom:8px}
+.step-num{font-size:9px;font-weight:700;color:var(--acc);text-transform:uppercase;margin-bottom:2px}
+
+/* QUIZ */
+.quiz-q{background:var(--bg);border:1px solid var(--bdr);border-radius:9px;padding:13px;margin-bottom:9px}
+.quiz-opt{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:7px;border:1.5px solid var(--bdr);margin-top:7px;cursor:pointer;transition:.14s;font-size:13px}
+.quiz-opt:hover{border-color:var(--acc);background:rgba(91,124,250,.05)}
+.quiz-opt.sel{border-color:var(--acc);background:rgba(91,124,250,.1);color:var(--acc);font-weight:600}
+.quiz-opt.correct{border-color:var(--grn);background:rgba(16,185,129,.1);color:var(--grn)}
+.quiz-opt.wrong{border-color:var(--red);background:rgba(239,68,68,.1);color:var(--red)}
+.radio-dot{width:15px;height:15px;border-radius:50%;border:2px solid var(--bdr);flex-shrink:0;transition:.14s}
+.quiz-opt.sel .radio-dot{border-color:var(--acc);background:var(--acc)}
+
+/* CERT */
+.cert-wrap{background:var(--bg);border:1.5px solid var(--acc);border-radius:14px;padding:30px;text-align:center;position:relative;overflow:hidden}
+.cert-seal{width:62px;height:62px;background:var(--grad);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 12px}
+.cert-lbl{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--mut);margin-bottom:8px}
+.cert-name{font-size:24px;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:7px 0}
+
+/* CHAT */
+.chat-container{display:flex;flex-direction:column;height:360px}
+.chat-msgs{flex:1;overflow-y:auto;padding:13px;display:flex;flex-direction:column;gap:9px}
+.chat-msg{max-width:80%;padding:9px 13px;border-radius:11px;font-size:13px;line-height:1.6}
+.chat-msg.user{background:var(--grad);color:#fff;align-self:flex-end;border-radius:11px 11px 3px 11px}
+.chat-msg.bot{background:rgba(28,36,56,.9);color:var(--txt);align-self:flex-start;border-radius:11px 11px 11px 3px}
+.chat-input-row{display:flex;gap:7px;padding:11px 13px;border-top:1px solid var(--bdr)}
+.chat-input-row input{flex:1;background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:8px 12px;color:var(--txt);font-size:13px}
+.chat-input-row input:focus{border-color:var(--acc)}
+
+/* PLAN CARDS */
+.plan-card{background:var(--card);border:1.5px solid var(--bdr);border-radius:12px;padding:18px}
+.plan-card.featured{border-color:var(--acc);background:rgba(91,124,250,.05)}
+.plan-price{font-size:24px;font-weight:800;margin:7px 0}
+.plan-feat{font-size:12px;color:var(--lt);margin:3px 0;display:flex;align-items:center;gap:5px}
+
+/* TOGGLE */
+.toggle-row{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--lt);padding:5px 0;cursor:pointer}
+.tog{width:33px;height:18px;border-radius:10px;position:relative;transition:.16s;flex-shrink:0}
+.tog.on{background:var(--grn)}.tog.off{background:var(--bdr)}
+.tog::after{content:'';position:absolute;width:12px;height:12px;background:#fff;border-radius:50%;top:3px;transition:.16s}
+.tog.on::after{left:17px}.tog.off::after{left:3px}
+
+/* CHART */
+.chart-bars{display:flex;align-items:flex-end;gap:5px;height:76px}
+.chart-bar{flex:1;border-radius:4px 4px 0 0;background:var(--grad);opacity:.55;transition:.2s;min-height:3px}
+.chart-bar:hover{opacity:1}
+
+/* TOAST */
+.toast-wrap{position:fixed;bottom:18px;right:18px;z-index:999;display:flex;flex-direction:column;gap:7px}
+.toast{padding:10px 16px;border-radius:10px;font-weight:600;font-size:13px;display:flex;align-items:center;gap:7px;border:1px solid;animation:pop .22s ease}
+.toast-ok{background:rgba(16,185,129,.13);border-color:rgba(16,185,129,.28);color:var(--grn)}
+.toast-info{background:rgba(91,124,250,.13);border-color:rgba(91,124,250,.28);color:var(--acc)}
+
+/* PAGE HEAD */
+.page-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:12px;flex-wrap:wrap}
+.page-title{font-size:22px;font-weight:800;line-height:1.1}
+.page-sub{color:var(--mut);font-size:12px;margin-top:3px}
+.empty{text-align:center;padding:42px;color:var(--mut)}
+.tabs{display:flex;gap:2px;background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:3px}
+.tab-btn{padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;color:var(--mut);background:none;border:none;transition:.14s;white-space:nowrap}
+.tab-btn.on{background:var(--grad);color:#fff}
+.pbar-wrap{height:4px;background:var(--bdr);border-radius:3px;overflow:hidden;margin:5px 0}
+.pbar-fill{height:100%;border-radius:3px;background:var(--grad);transition:width .3s}
+.sep{height:1px;background:var(--bdr);margin:14px 0}
+.pending-box{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.18);border-radius:12px;padding:14px;margin-bottom:16px}
+.pending-item{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--card);border:1px solid var(--bdr);border-radius:8px;margin-bottom:7px}
+.upsell-box{margin-top:15px;background:linear-gradient(135deg,rgba(91,124,250,.09),rgba(139,92,246,.09));border:1px solid rgba(91,124,250,.2);border-radius:12px;padding:15px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.assigned-item{display:flex;align-items:center;gap:12px;padding:13px 15px;background:var(--card);border:1px solid var(--bdr);border-radius:12px;margin-bottom:8px}
+.template-card{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:16px;cursor:pointer;transition:.18s}
+.template-card:hover{border-color:rgba(91,124,250,.4);transform:translateY(-2px)}
+.act-item{display:flex;gap:9px;padding:7px 0;border-bottom:1px solid rgba(28,36,56,.5)}
+.act-dot{width:7px;height:7px;border-radius:50%;background:var(--acc);margin-top:5px;flex-shrink:0}
+.sec-item{display:flex;align-items:center;gap:10px;padding:11px;background:var(--card);border:1px solid var(--bdr);border-radius:9px;margin-bottom:7px}
+
+/* RESPONSIVE */
+@media(max-width:700px){
+  .sidebar{display:none;position:fixed;z-index:200;width:100%;max-width:280px}
+  .sidebar.open{display:flex!important}
+  .main-area{margin-left:0!important}
+  #menu-btn{display:flex!important}
+  .sg4{grid-template-columns:repeat(2,1fr)}
+  .sg4{grid-template-columns:repeat(2,1fr)}
+  .g2{grid-template-columns:1fr}
+  .g3{grid-template-columns:repeat(2,1fr)}
+  .src-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH PAGE -->
+<div id="auth-page">
+  <div class="auth-orb" style="width:500px;height:500px;background:#5B7CFA;top:-150px;right:-80px;opacity:.07"></div>
+  <div class="auth-orb" style="width:380px;height:380px;background:#8B5CF6;bottom:-100px;left:-80px;opacity:.07"></div>
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-mark">T</div>
+      <span class="auth-brand">TutorAI</span>
+    </div>
+    <div class="auth-h" id="auth-title">Bienvenido 👋</div>
+    <div class="auth-s" id="auth-sub">Entrá a tu plataforma de capacitación</div>
+    <div class="auth-tabs">
+      <button class="auth-tab on" onclick="switchTab('login')">Iniciar Sesión</button>
+      <button class="auth-tab" onclick="switchTab('register')">Registrarse</button>
+    </div>
+    <div class="hints" id="demo-hints">
+      🔑 <strong>Admin:</strong> admin@tutorai.com / admin123<br>
+      👤 <strong>Pro:</strong> carlos@demo.com / 123 &nbsp;·&nbsp; <strong>Business:</strong> juan@demo.com / 123<br>
+      👤 <strong>Free:</strong> maria@demo.com / 123
+    </div>
+    <div id="name-field" class="fg hidden">
+      <label>Nombre completo</label>
+      <input type="text" id="inp-name" placeholder="Tu nombre...">
+    </div>
+    <div class="fg">
+      <label>Email</label>
+      <input type="email" id="inp-email" placeholder="tu@empresa.com">
+    </div>
+    <div class="fg">
+      <label>Contraseña</label>
+      <input type="password" id="inp-pass" placeholder="••••••••">
+    </div>
+    <div class="err-msg hidden" id="auth-err"></div>
+    <button class="btn btn-p btn-full" id="auth-btn" onclick="doAuth()">Entrar a TutorAI →</button>
+    <div class="dvd">o continuá con</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-s btn-full">🔵 Google</button>
+      <button class="btn btn-s btn-full">💼 Microsoft</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div id="app-shell" class="shell hidden">
+  <!-- SIDEBAR -->
+  <div class="sidebar" id="sidebar">
+    <div class="logo-row">
+      <div class="logo-dot">T</div>
+      <span class="logo-name">TutorAI</span>
+      <span class="plan-pill" id="sb-plan-pill"></span>
+    </div>
+    <div style="padding:10px 7px">
+      <button class="btn btn-p btn-full btn-sm" onclick="openNewTut()">+ Crear Tutorial</button>
+    </div>
+    <div class="nav-area" id="nav-area"></div>
+    <div class="sb-foot">
+      <div class="user-card">
+        <div class="ava" id="sb-ava"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="sb-name"></div>
+          <div style="font-size:10px;color:var(--mut)" id="sb-role"></div>
+        </div>
+        <button class="icon-btn" style="border:none;background:none;width:24px;height:24px" onclick="logout()">⬅</button>
+      </div>
+    </div>
+  </div>
+  <!-- MAIN -->
+  <div class="main-area">
+    <div class="topbar">
+      <button class="icon-btn" id="menu-btn" onclick="toggleSidebar()" style="display:none">☰</button>
+      <div class="search-bar">
+        <span style="color:var(--mut)">🔍</span>
+        <input type="text" placeholder="Buscar..." id="search-inp" oninput="onSearch(this.value)">
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <div class="icon-btn">🔔</div>
+      </div>
+    </div>
+    <div class="content-area" id="content-area"></div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="overlay hidden" id="modal-overlay" onclick="closeModalOnBg(event)">
+  <div class="modal" id="modal-box">
+    <div class="modal-head">
+      <div class="modal-title" id="modal-title"></div>
+      <button class="icon-btn" style="border:none;background:none" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+    <div class="modal-foot hidden" id="modal-foot"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script>
+
+function toggleSidebar(){
+  var sb=document.getElementById("sidebar");
+  if(sb){ sb.classList.toggle("open"); }
+}
+function shareLink(id){ toast("Link copiado: tutorai.app/t/"+id); }
+function toggleTog(el){ el.className=el.className.includes("on")?"tog off":"tog on"; }
+function setSrc(v){ if(newTutState) newTutState.src=v; }
+function setOut(v){ if(newTutState) newTutState.out=v; }
+
+
+// ═══════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════
+var OWNER = {id:0,email:"admin@tutorai.com",password:"admin123",name:"Tincho",role:"owner",avatar:"TI",plan:"owner",workspace:""};
+var users = [
+  {id:2,name:"Carlos López",email:"carlos@demo.com",password:"123",role:"user",plan:"pro",avatar:"CL",joined:"2025-02-20",workspace:"Acme Corp"},
+  {id:3,name:"María Torres",email:"maria@demo.com",password:"123",role:"user",plan:"free",avatar:"MT",joined:"2025-03-10",workspace:"Acme Corp"},
+  {id:4,name:"Juan Pérez",email:"juan@demo.com",password:"123",role:"user",plan:"business",avatar:"JP",joined:"2025-01-05",workspace:"GlobalTech"},
+  {id:5,name:"Ana Rodríguez",email:"ana@demo.com",password:"123",role:"user",plan:"pro",avatar:"AR",joined:"2025-04-01",workspace:"GlobalTech"}
+];
+var tuts = [
+  {id:1,userId:2,title:"Excel para reportes financieros",type:"video",lang:"Español",dept:"Finanzas",views:342,completions:89,status:"published",created:"2025-04-01",duration:"8 min",quizOn:true,certOn:true,assignedTo:[3,5],favorite:true},
+  {id:2,userId:3,title:"Onboarding nuevo empleado",type:"text",lang:"Español",dept:"RRHH",views:218,completions:156,status:"published",created:"2025-03-28",duration:"5 min",quizOn:true,certOn:true,assignedTo:[],favorite:false},
+  {id:3,userId:2,title:"SAP: Ingreso de órdenes de compra",type:"voice",lang:"Inglés",dept:"Compras",views:97,completions:0,status:"draft",created:"2025-04-10",duration:"12 min",quizOn:false,certOn:false,assignedTo:[3],favorite:true},
+  {id:4,userId:4,title:"PowerPoint: Plantillas corporativas",type:"video",lang:"Español",dept:"Marketing",views:445,completions:203,status:"published",created:"2025-03-15",duration:"6 min",quizOn:true,certOn:true,assignedTo:[5],favorite:false},
+  {id:5,userId:4,title:"Word: Formato de contratos legales",type:"text",lang:"Portugués",dept:"Legal",views:134,completions:67,status:"published",created:"2025-04-05",duration:"4 min",quizOn:false,certOn:false,assignedTo:[],favorite:false},
+  {id:6,userId:2,title:"CRM: Registro de clientes nuevos",type:"video",lang:"Español",dept:"Ventas",views:289,completions:112,status:"published",created:"2025-04-12",duration:"10 min",quizOn:true,certOn:true,assignedTo:[3,4,5],favorite:false}
+];
+var completions = [
+  {userId:3,tutId:1,score:85,date:"2025-04-14",certified:true},
+  {userId:5,tutId:1,score:92,date:"2025-04-15",certified:true},
+  {userId:3,tutId:6,score:78,date:"2025-04-16",certified:true}
+];
+var PLANS = {
+  free:{label:"Free",color:"#6B7A99",price:"$0",tuts:3,types:["text"],langs:1,seats:1},
+  pro:{label:"Pro",color:"#4F6EF7",price:"$29",tuts:50,types:["text","voice","video"],langs:9,seats:5},
+  business:{label:"Business",color:"#10B981",price:"$99",tuts:999,types:["text","voice","video"],langs:9,seats:25}
+};
+var LANGS = ["Español","Inglés","Portugués","Francés","Alemán","Italiano","Chino","Japonés","Árabe"];
+var TEMPLATES = [
+  {id:"t1",icon:"👋",title:"Onboarding de empleado",dept:"RRHH",desc:"Bienvenida e integración al equipo"},
+  {id:"t2",icon:"💼",title:"Procedimiento de ventas",dept:"Ventas",desc:"Flujo desde prospecto hasta cierre"},
+  {id:"t3",icon:"🔷",title:"Uso básico de SAP",dept:"TI",desc:"Navegación y operaciones esenciales"},
+  {id:"t4",icon:"📊",title:"Excel para reportes",dept:"Finanzas",desc:"Tablas dinámicas y dashboards"},
+  {id:"t5",icon:"🛡️",title:"Seguridad informática",dept:"TI",desc:"Buenas prácticas y protocolos"},
+  {id:"t6",icon:"📞",title:"Atención al cliente",dept:"Ventas",desc:"Llamadas, quejas y resolución"},
+  {id:"t7",icon:"📋",title:"Gestión de proyectos",dept:"Operaciones",desc:"Metodologías ágiles"},
+  {id:"t8",icon:"⚖️",title:"Contratos y documentación",dept:"Legal",desc:"Formatos legales y archivo"},
+  {id:"t9",icon:"🎯",title:"Evaluación de desempeño",dept:"RRHH",desc:"Feedback y objetivos anuales"}
+];
+
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+var currentUser = null;
+var currentPage = "home";
+var authMode = "login";
+var searchVal = "";
+var nextId = 100;
+
+// ═══════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════
+function $(id){ return document.getElementById(id); }
+function show(id){ $(id).classList.remove("hidden"); }
+function hide(id){ $(id).classList.add("hidden"); }
+function isHidden(id){ return $(id).classList.contains("hidden"); }
+
+function toast(msg, type) {
+  type = type || "ok";
+  var w = $("toast-wrap");
+  var d = document.createElement("div");
+  d.className = "toast toast-" + type;
+  d.textContent = "✓ " + msg;
+  w.appendChild(d);
+  setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); }, 2800);
+}
+
+function tbadge(type) {
+  var m = {text:["📄","b-blue","Texto"],voice:["🎙️","b-purple","Voz"],video:["🎬","b-org","Video"]};
+  var r = m[type] || m.text;
+  return '<span class="badge '+r[1]+'">'+r[0]+' '+r[2]+'</span>';
+}
+function sbadge(status) {
+  if(status === "published") return '<span class="badge b-grn">✓ Publicado</span>';
+  return '<span class="badge b-org">✎ Borrador</span>';
+}
+function thumbBg(type) {
+  return type==="video"?"#1A0D30":type==="voice"?"#0D1130":"#0D1A30";
+}
+function thumbEm(type) {
+  return type==="video"?"🎬":type==="voice"?"🎙️":"📄";
+}
+function planColor(plan) {
+  return plan==="pro"?"#4F6EF7":plan==="business"?"#10B981":"#6B7A99";
+}
+function getUser(id) { return users.find(function(u){return u.id===id;})||{name:"Sistema"}; }
+function getTut(id) { return tuts.find(function(t){return t.id===id;}); }
+function myTuts() { return tuts.filter(function(t){return t.userId===currentUser.id;}); }
+function assignedTuts() { return tuts.filter(function(t){return t.assignedTo&&t.assignedTo.indexOf(currentUser.id)>-1;}); }
+function myCompls() { return completions.filter(function(c){return c.userId===currentUser.id;}); }
+function myPlan() { return PLANS[currentUser.plan]||PLANS.free; }
+
+async function callAI(prompt, sys) {
+  try {
+    var r = await fetch("/api/chat",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({prompt:prompt,system:sys||""})
+    });
+    var d = await r.json();
+    return d.text || "";
+  } catch(e) { return ""; }
+}
+
+// ═══════════════════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════════════════
+function switchTab(mode) {
+  authMode = mode;
+  var tabs = document.querySelectorAll(".auth-tab");
+  tabs[0].classList.toggle("on", mode==="login");
+  tabs[1].classList.toggle("on", mode==="register");
+  if(mode==="login"){
+    $("auth-title").textContent = "Bienvenido 👋";
+    $("auth-sub").textContent = "Entrá a tu plataforma de capacitación";
+    $("auth-btn").textContent = "Entrar a TutorAI →";
+    show("demo-hints");
+    hide("name-field");
+  } else {
+    $("auth-title").textContent = "Crear cuenta gratis";
+    $("auth-sub").textContent = "Generá tutoriales con IA desde hoy";
+    $("auth-btn").textContent = "Crear cuenta gratis →";
+    hide("demo-hints");
+    show("name-field");
+  }
+  hide("auth-err");
+}
+
+function doAuth() {
+  var email = $("inp-email").value.trim();
+  var pass = $("inp-pass").value.trim();
+  var err = $("auth-err");
+  hide("auth-err");
+
+  if(authMode === "login") {
+    if(email===OWNER.email && pass===OWNER.password){ loginAs(OWNER); return; }
+    var u = users.find(function(u){return u.email===email&&u.password===pass;});
+    if(u){ loginAs(u); return; }
+    err.textContent = "⚠ Credenciales incorrectas";
+    show("auth-err");
+  } else {
+    var name = $("inp-name").value.trim();
+    if(!name||!email||!pass){ err.textContent="⚠ Completá todos los campos"; show("auth-err"); return; }
+    if(users.find(function(u){return u.email===email;})){ err.textContent="⚠ Email ya registrado"; show("auth-err"); return; }
+    var nu = {id:++nextId,name:name,email:email,password:pass,role:"user",plan:"free",avatar:name.slice(0,2).toUpperCase(),joined:new Date().toISOString().slice(0,10),workspace:""};
+    users.push(nu);
+    loginAs(nu);
+  }
+}
+
+function loginAs(u) {
+  currentUser = u;
+  hide("auth-page");
+  show("app-shell");
+  try {
+    buildSidebar();
+  } catch(e) {
+    alert("Error buildSidebar: " + e.message);
+    return;
+  }
+  try {
+    goPage(currentUser.role === "owner" ? "dash" : "home");
+  } catch(e) {
+    alert("Error goPage: " + e.message);
+    var ca = $("content-area");
+    if(ca) ca.innerHTML = '<div style="padding:20px;color:red">Error: ' + e.message + '</div>';
+  }
+}
+
+function logout() {
+  currentUser = null;
+  hide("app-shell");
+  show("auth-page");
+  $("inp-email").value="";
+  $("inp-pass").value="";
+}
+
+// ═══════════════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════════════
+function buildSidebar() {
+  var pc = planColor(currentUser.plan);
+  var pill = $("sb-plan-pill");
+  if(currentUser.role==="owner"){
+    pill.textContent = "OWNER";
+    pill.style.background = "rgba(239,68,68,.15)";
+    pill.style.color = "#EF4444";
+  } else {
+    var pl = myPlan();
+    pill.textContent = pl.label.toUpperCase();
+    pill.style.background = pc+"22";
+    pill.style.color = pc;
+  }
+  $("sb-ava").textContent = currentUser.avatar;
+  $("sb-name").textContent = currentUser.name;
+  $("sb-role").textContent = currentUser.role==="owner"?"Super Admin":myPlan().label;
+
+  var groups;
+  if(currentUser.role==="owner"){
+    groups = [
+      {g:"Principal",items:[
+        {id:"dash",icon:"📊",label:"Dashboard"},
+        {id:"all-tuts",icon:"📚",label:"Tutoriales",badge:tuts.length}
+      ]},
+      {g:"Gestión",items:[
+        {id:"users-mgmt",icon:"👥",label:"Usuarios",badge:users.length},
+        {id:"analytics",icon:"📈",label:"Analíticas"},
+        {id:"money",icon:"💰",label:"Ingresos"}
+      ]},
+      {g:"Sistema",items:[
+        {id:"security",icon:"🔒",label:"Seguridad"},
+        {id:"settings",icon:"⚙️",label:"Configuración"}
+      ]}
+    ];
+  } else {
+    var pending = assignedTuts().filter(function(t){return !myCompls().find(function(c){return c.tutId===t.id;});}).length;
+    var certs = myCompls().filter(function(c){return c.certified;}).length;
+    groups = [
+      {g:"Mi Espacio",items:[
+        {id:"home",icon:"🏠",label:"Inicio"},
+        {id:"my-tuts",icon:"📚",label:"Mis Tutoriales",badge:myTuts().length},
+        {id:"assigned",icon:"📋",label:"Asignados",badge:pending||null,red:pending>0},
+        {id:"favs",icon:"⭐",label:"Favoritos",badge:myTuts().filter(function(t){return t.favorite;}).length||null}
+      ]},
+      {g:"Crear",items:[
+        {id:"templates",icon:"🗂️",label:"Templates"}
+      ]},
+      {g:"Explorar",items:[
+        {id:"explore",icon:"🌎",label:"Explorar públicos"}
+      ]},
+      {g:"Cuenta",items:[
+        {id:"certs",icon:"🎓",label:"Mis Certificados",badge:certs||null},
+        {id:"my-plan",icon:"👑",label:"Mi Plan"}
+      ]}
+    ];
+  }
+
+  var html = "";
+  groups.forEach(function(g){
+    html += '<div class="nav-sec">'+g.g+'</div>';
+    g.items.forEach(function(it){
+      var bc = it.badge!=null ? '<span class="nav-badge'+(it.red?" nav-badge-red":"")+'">' + it.badge + '</span>' : "";
+      html += '<button class="nav-btn" id="nav-'+it.id+'" onclick="goPage(this.dataset.page)" data-page="'+it.id+'">'+it.icon+' '+it.label+bc+'</button>';
+    });
+  });
+  $("nav-area").innerHTML = html;
+}
+
+function goPage(page) {
+  currentPage = page;
+  // Update nav active state
+  document.querySelectorAll(".nav-btn").forEach(function(b){ b.classList.remove("on"); });
+  if($("nav-"+page)) $("nav-"+page).classList.add("on");
+  // Close mobile sidebar
+  var sb = document.getElementById("sidebar");
+  if(sb) sb.classList.remove("open");
+  
+  var ca = $("content-area");
+  try {
+  if(currentUser.role==="owner"){
+    if(page==="dash") ca.innerHTML = renderAdminDash();
+    else if(page==="all-tuts") ca.innerHTML = renderAdminTuts();
+    else if(page==="users-mgmt") ca.innerHTML = renderAdminUsers();
+    else if(page==="analytics") ca.innerHTML = renderAdminAnalytics();
+    else if(page==="money") ca.innerHTML = renderAdminMoney();
+    else if(page==="security") ca.innerHTML = renderAdminSecurity();
+    else if(page==="settings") ca.innerHTML = renderAdminSettings();
+  } else {
+    if(page==="home") ca.innerHTML = renderUserHome();
+    else if(page==="my-tuts") ca.innerHTML = renderMyTuts();
+    else if(page==="assigned") ca.innerHTML = renderAssigned();
+    else if(page==="favs") ca.innerHTML = renderFavs();
+    else if(page==="templates") ca.innerHTML = renderTemplates();
+    else if(page==="explore") ca.innerHTML = renderExplore();
+    else if(page==="certs") ca.innerHTML = renderCerts();
+    else if(page==="my-plan") ca.innerHTML = renderMyPlan();
+  }
+  } catch(err) {
+    ca.innerHTML = '<div style="padding:30px;color:#EF4444;font-size:14px;line-height:1.8"><strong>⚠ Error detectado:</strong><br>' + err.message + '<br><br><pre style="font-size:11px;color:#8A9AC0;white-space:pre-wrap">' + (err.stack||"").slice(0,300) + '</pre><br><button onclick="location.reload()" style="background:#5B7CFA;color:#fff;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:13px">🔄 Recargar</button></div>';
+    console.error("goPage error:", err);
+  }
+}
+
+function onSearch(val) {
+  searchVal = val;
+  goPage(currentPage);
+}
+
+// ═══════════════════════════════════════════════════
+// ADMIN PAGES
+// ═══════════════════════════════════════════════════
+function renderAdminDash() {
+  var tv = tuts.reduce(function(a,t){return a+t.views;},0);
+  var mrr = users.reduce(function(a,u){return a+(u.plan==="pro"?29:u.plan==="business"?99:0);},0);
+  var rows = tuts.slice(0,6).map(function(t){
+    return '<tr><td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600">'+t.title+'</td><td>'+tbadge(t.type)+'</td><td style="font-weight:700;color:var(--acc)">'+t.views+'</td><td>'+sbadge(t.status)+'</td></tr>';
+  }).join("");
+  var acts = [
+    {t:"María completó 'Excel para reportes' — Score 85%",tm:"5 min"},
+    {t:"Nuevo usuario: Roberto Silva (Free)",tm:"18 min"},
+    {t:"Carlos asignó tutorial a 3 miembros",tm:"45 min"},
+    {t:"Tutorial 'Onboarding' alcanzó 200 completaciones",tm:"2h"}
+  ];
+  var actsHtml = acts.map(function(a){
+    return '<div class="act-item"><div class="act-dot"></div><div><div style="font-size:12px">'+a.t+'</div><div style="font-size:10px;color:var(--mut);margin-top:1px">hace '+a.tm+'</div></div></div>';
+  }).join("");
+
+  return '<div class="page-head"><div><div class="page-title">Panel de Control 👑</div><div class="page-sub">Vista exclusiva del dueño</div></div><button class="btn btn-p btn-sm" onclick="openNewTut()">+ Nuevo Tutorial</button></div>'
+    +'<div class="stat-grid sg4">'
+    +'<div class="stat-card" style="border-top-color:#5B7CFA"><div class="stat-label">Tutoriales</div><div class="stat-val" style="color:#5B7CFA">'+tuts.length+'</div><div class="stat-trend">↑ +3 esta semana</div></div>'
+    +'<div class="stat-card" style="border-top-color:#10B981"><div class="stat-label">Usuarios</div><div class="stat-val" style="color:#10B981">'+users.length+'</div><div class="stat-trend">↑ +2 nuevos</div></div>'
+    +'<div class="stat-card" style="border-top-color:#8B5CF6"><div class="stat-label">Vistas</div><div class="stat-val" style="color:#8B5CF6">'+tv+'</div><div class="stat-trend">↑ +18%</div></div>'
+    +'<div class="stat-card" style="border-top-color:#F59E0B"><div class="stat-label">MRR</div><div class="stat-val" style="color:#F59E0B;font-size:20px">$'+mrr+'/mes</div></div>'
+    +'</div>'
+    +'<div class="g2">'
+    +'<div class="card"><div class="card-head"><div class="card-title">Tutoriales recientes</div><button class="btn btn-s btn-sm" onclick="goPage(this.dataset.p)" data-p="all-tuts">Ver todos</button></div><div class="tbl-wrap"><table><thead><tr><th>Título</th><th>Tipo</th><th>Vistas</th><th>Estado</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>'
+    +'<div class="card"><div class="card-head"><div class="card-title">Actividad</div></div><div class="card-body">'+actsHtml+'</div></div>'
+    +'</div>';
+}
+
+function renderAdminTuts() {
+  var filtered = tuts.filter(function(t){return !searchVal||t.title.toLowerCase().includes(searchVal.toLowerCase());});
+  var rows = filtered.map(function(t){
+    var u = getUser(t.userId);
+    return '<tr><td><div style="font-weight:600;font-size:12px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+t.title+'</div><div style="font-size:10px;color:var(--mut)">'+t.created+' · '+t.duration+'</div></td>'
+      +'<td style="font-size:11px">'+u.name+'</td><td>'+tbadge(t.type)+'</td>'
+      +'<td><span class="tag">'+t.lang+'</span></td>'
+      +'<td style="font-weight:700;color:var(--acc)">'+t.views+'</td>'
+      +'<td><span class="badge '+(t.quizOn?"b-grn":"b-gray")+'">'+(t.quizOn?"✓":"—")+'</span></td>'
+      +'<td><span class="badge '+(t.certOn?"b-purple":"b-gray")+'">'+(t.certOn?"✓":"—")+'</span></td>'
+      +'<td>'+sbadge(t.status)+'</td>'
+      +'<td><button class="icon-btn" style="width:24px;height:24px;font-size:12px" onclick="deleteTut('+t.id+')">🗑</button></td></tr>';
+  }).join("");
+  return '<div class="page-head"><div><div class="page-title">Todos los Tutoriales</div><div class="page-sub">'+tuts.length+' en la plataforma</div></div><button class="btn btn-p btn-sm" onclick="openNewTut()">+ Nuevo</button></div>'
+    +'<div class="card"><div class="tbl-wrap"><table><thead><tr><th>Tutorial</th><th>Creador</th><th>Tipo</th><th>Idioma</th><th>Vistas</th><th>Quiz</th><th>Cert</th><th>Estado</th><th></th></tr></thead><tbody>'+(rows||'<tr><td colspan="9"><div class="empty">Sin resultados</div></td></tr>')+'</tbody></table></div></div>';
+}
+
+function renderAdminUsers() {
+  var rows = users.map(function(u){
+    var tc = tuts.filter(function(t){return t.userId===u.id;}).length;
+    var opts = ["free","pro","business"].map(function(p){return '<option value="'+p+'"'+(u.plan===p?" selected":"")+'>'+p.charAt(0).toUpperCase()+p.slice(1)+'</option>';}).join("");
+    return '<tr><td><div style="display:flex;align-items:center;gap:8px"><div class="ava" style="width:28px;height:28px;font-size:10px">'+u.avatar+'</div><div><div style="font-weight:600;font-size:12px">'+u.name+'</div><div style="font-size:10px;color:var(--mut)">'+u.email+'</div></div></div></td>'
+      +'<td><span class="tag">'+(u.workspace||"—")+'</span></td>'
+      +'<td><select style="background:transparent;border:none;color:'+(u.plan==="free"?"var(--mut)":u.plan==="pro"?"var(--acc)":"var(--grn)")+';font-weight:700;font-size:10px;padding:0;cursor:pointer" onchange="changeUserPlan('+u.id+',this.value)">'+opts+'</select></td>'
+      +'<td style="font-weight:700;color:var(--acc)">'+tc+'</td>'
+      +'<td style="font-size:10px;color:var(--mut)">'+u.joined+'</td>'
+      +'<td><button class="icon-btn" style="width:24px;height:24px;font-size:12px" onclick="deleteUser('+u.id+')">🗑</button></td></tr>';
+  }).join("");
+  var free=users.filter(function(u){return u.plan==="free";}).length;
+  var pro=users.filter(function(u){return u.plan==="pro";}).length;
+  var biz=users.filter(function(u){return u.plan==="business";}).length;
+  return '<div class="page-head"><div><div class="page-title">Usuarios</div><div class="page-sub">'+users.length+' registrados</div></div></div>'
+    +'<div class="stat-grid sg3">'
+    +'<div class="stat-card" style="border-top-color:#6B7A99"><div class="stat-label">Free</div><div class="stat-val" style="color:#6B7A99;font-size:24px">'+free+'</div></div>'
+    +'<div class="stat-card" style="border-top-color:#4F6EF7"><div class="stat-label">Pro</div><div class="stat-val" style="color:#4F6EF7;font-size:24px">'+pro+'</div></div>'
+    +'<div class="stat-card" style="border-top-color:#10B981"><div class="stat-label">Business</div><div class="stat-val" style="color:#10B981;font-size:24px">'+biz+'</div></div>'
+    +'</div>'
+    +'<div class="card"><div class="tbl-wrap"><table><thead><tr><th>Usuario</th><th>Workspace</th><th>Plan</th><th>Tutoriales</th><th>Ingresó</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+}
+
+function renderAdminAnalytics() {
+  var bars=[38,55,42,70,61,48,85,72,55,90,78,95];
+  var months=["E","F","M","A","M","J","J","A","S","O","N","D"];
+  var barsHtml=bars.map(function(h,i){return '<div class="chart-bar" style="height:'+h+'%" title="'+months[i]+': '+(h*8)+' vistas"></div>';}).join("");
+  var monthsHtml=months.map(function(m){return '<span>'+m+'</span>';}).join("");
+  var top=[...tuts].sort(function(a,b){return b.views-a.views;}).slice(0,5);
+  var topRows=top.map(function(t,i){
+    var rate=t.views?Math.round((t.completions/t.views)*100):0;
+    return '<tr><td style="font-weight:800;font-size:15px;color:var(--mut)">#'+(i+1)+'</td><td style="font-weight:600;font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+t.title+'</td><td style="font-weight:700;color:var(--acc)">'+t.views+'</td><td style="font-weight:700;color:var(--grn)">'+t.completions+'</td><td style="font-weight:700;color:var(--org)">'+rate+'%</td></tr>';
+  }).join("");
+  var avg=completions.length?Math.round(completions.reduce(function(a,c){return a+c.score;},0)/completions.length):0;
+  return '<div class="page-head"><div><div class="page-title">Analíticas</div><div class="page-sub">Métricas globales</div></div></div>'
+    +'<div class="stat-grid sg4">'
+    +'<div class="stat-card"><div class="stat-label">Completaciones</div><div class="stat-val" style="font-size:22px">'+completions.length+'</div></div>'
+    +'<div class="stat-card"><div class="stat-label">Score promedio</div><div class="stat-val" style="font-size:22px">'+avg+'%</div></div>'
+    +'<div class="stat-card"><div class="stat-label">Certificados</div><div class="stat-val" style="font-size:22px">'+completions.filter(function(c){return c.certified;}).length+'</div></div>'
+    +'<div class="stat-card"><div class="stat-label">Con quiz</div><div class="stat-val" style="font-size:22px">'+tuts.filter(function(t){return t.quizOn;}).length+'/'+tuts.length+'</div></div>'
+    +'</div>'
+    +'<div class="g2">'
+    +'<div class="card"><div class="card-head"><div class="card-title">Vistas por mes</div></div><div class="card-body"><div class="chart-bars">'+barsHtml+'</div><div style="display:flex;justify-content:space-between;margin-top:5px;font-size:9px;color:var(--mut)">'+monthsHtml+'</div></div></div>'
+    +'<div class="card"><div class="card-head"><div class="card-title">Por tipo</div></div><div class="card-body">'
+    +[["🎬 Video",55,"#8B5CF6"],["📄 Texto",28,"#5B7CFA"],["🎙️ Voz",17,"#10B981"]].map(function(r){return '<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span>'+r[0]+'</span><span style="font-weight:700;color:'+r[2]+'">'+r[1]+'%</span></div><div class="pbar-wrap"><div class="pbar-fill" style="width:'+r[1]+'%;background:'+r[2]+'"></div></div></div>';}).join("")
+    +'</div></div>'
+    +'</div>'
+    +'<div class="card" style="margin-top:15px"><div class="card-head"><div class="card-title">Top 5 tutoriales</div></div><div class="tbl-wrap"><table><thead><tr><th>#</th><th>Título</th><th>Vistas</th><th>Completaciones</th><th>Tasa</th></tr></thead><tbody>'+topRows+'</tbody></table></div></div>';
+}
+
+function renderAdminMoney() {
+  var mrr=users.reduce(function(a,u){return a+(u.plan==="pro"?29:u.plan==="business"?99:0);},0);
+  var paid=users.filter(function(u){return u.plan!=="free";}).length;
+  var conv=Math.round((paid/users.length)*100);
+  var plCards=Object.entries(PLANS).map(function(entry){
+    var k=entry[0],pl=entry[1];
+    var cnt=users.filter(function(u){return u.plan===k;}).length;
+    return '<div class="plan-card'+(k==="pro"?" featured":"")+'"><div style="font-size:20px;margin-bottom:5px">'+(k==="free"?"🆓":k==="pro"?"💼":"🏢")+'</div><div style="font-weight:800;font-size:14px">'+pl.label+'</div><div class="plan-price" style="color:'+pl.color+'">'+pl.price+'<span style="font-size:11px;font-weight:400;color:var(--mut)">/mes</span></div>'+[''+pl.tuts+(pl.tuts===999?" tutoriales ilimitados":" tutoriales"),pl.langs+' idioma'+(pl.langs>1?"s":""),pl.seats+' seat'+(pl.seats>1?"s":"")].map(function(f){return '<div class="plan-feat"><span style="color:var(--grn)">✓</span> '+f+'</div>';}).join("")+'<div style="margin-top:10px;font-size:11px;color:var(--mut)">'+cnt+' usuarios</div></div>';
+  }).join("");
+  return '<div class="page-head"><div><div class="page-title">Ingresos & Planes</div></div></div>'
+    +'<div class="stat-grid sg4">'
+    +'<div class="stat-card" style="border-top-color:#10B981"><div class="stat-label">MRR</div><div class="stat-val" style="color:#10B981;font-size:18px">$'+mrr+'/mes</div></div>'
+    +'<div class="stat-card" style="border-top-color:#5B7CFA"><div class="stat-label">ARR</div><div class="stat-val" style="color:#5B7CFA;font-size:18px">$'+(mrr*12)+'/año</div></div>'
+    +'<div class="stat-card" style="border-top-color:#8B5CF6"><div class="stat-label">Usuarios pagos</div><div class="stat-val" style="color:#8B5CF6;font-size:22px">'+paid+'</div></div>'
+    +'<div class="stat-card" style="border-top-color:#F59E0B"><div class="stat-label">Conversión</div><div class="stat-val" style="color:#F59E0B;font-size:22px">'+conv+'%</div></div>'
+    +'</div><div class="g3">'+plCards+'</div>';
+}
+
+function renderAdminSecurity() {
+  var items=[["JWT Auth","Tokens 24h",true],["AES-256","Datos encriptados",true],["HTTPS TLS 1.3","Tráfico encriptado",true],["2FA","Doble factor",false],["RBAC","Control por roles",true],["Audit Log","Registro de acciones",true],["Rate Limit","Anti-brute force",true],["GDPR/LGPD","Compliance",false]];
+  var secItems=items.map(function(it){return '<div class="sec-item"><div style="width:8px;height:8px;border-radius:50%;background:'+(it[2]?"var(--grn)":"var(--org)")+';flex-shrink:0"></div><div style="flex:1"><div style="font-weight:600;font-size:12px">'+it[0]+'</div><div style="font-size:10px;color:var(--mut)">'+it[1]+'</div></div><span class="badge '+(it[2]?"b-grn":"b-org")+'">'+(it[2]?"Activo":"Opcional")+'</span></div>';}).join("");
+  var logs=[{a:"Login",u:"admin@tutorai.com",t:"Hoy 09:14",ok:true},{a:"Registro",u:"nuevo@email.com",t:"Hoy 08:40",ok:true},{a:"Login fallido",u:"hack@test.com",t:"Hoy 07:30",ok:false}];
+  var logHtml=logs.map(function(l){return '<div class="act-item"><div class="act-dot" style="background:'+(l.ok?"var(--grn)":"var(--red)")+'"></div><div><div style="font-size:12px;font-weight:600">'+l.a+' — '+l.u+'</div><div style="font-size:10px;color:var(--mut)">'+l.t+'</div></div></div>';}).join("");
+  return '<div class="page-head"><div><div class="page-title">Seguridad</div></div><span class="badge b-grn">🔒 Seguro</span></div>'
+    +'<div class="g2"><div>'+secItems+'</div><div class="card"><div class="card-head"><div class="card-title">Audit Log</div></div><div class="card-body">'+logHtml+'</div></div></div>';
+}
+
+function renderAdminSettings() {
+  var ints=[["📊 Office 365",true],["🔵 Google Workspace",false],["💬 Slack",true],["🔷 SAP",false],["☁️ Salesforce",false]];
+  var intHtml=ints.map(function(it,i){return '<div style="display:flex;align-items:center;gap:9px;padding:8px 0;border-bottom:1px solid var(--bdr)"><span style="flex:1;font-size:12px">'+it[0]+'</span><div class="tog '+(it[1]?"on":"off")+'" onclick="toggleTog(this)"></div></div>';}).join("");
+  return '<div class="page-head"><div><div class="page-title">Configuración</div></div></div>'
+    +'<div class="g2">'
+    +'<div class="card"><div class="card-head"><div class="card-title">Empresa</div></div><div class="card-body">'
+    +'<div class="form-group"><label>Nombre</label><input value="TutorAI"></div>'
+    +'<div class="form-group"><label>Email soporte</label><input value="soporte@tutorai.com"></div>'
+    +'<div class="form-group"><label>Idioma base</label><select>'+LANGS.map(function(l){return '<option>'+l+'</option>';}).join("")+'</select></div>'
+    +'<button class="btn btn-p btn-sm" onclick="toast(this.dataset.m)" data-m="Guardado correctamente">Guardar</button>'
+    +'</div></div>'
+    +'<div class="card"><div class="card-head"><div class="card-title">Integraciones</div></div><div class="card-body">'+intHtml+'</div></div>'
+    +'</div>';
+}
+
+// ═══════════════════════════════════════════════════
+// USER PAGES
+// ═══════════════════════════════════════════════════
+function renderUserHome() {
+  var plan=myPlan();
+  var mt=myTuts();
+  var mc=myCompls();
+  var at=assignedTuts();
+  var pending=at.filter(function(t){return !mc.find(function(c){return c.tutId===t.id;});});
+  var pc=planColor(currentUser.plan);
+  var pendingHtml="";
+  if(pending.length>0){
+    pendingHtml='<div class="pending-box"><div style="font-weight:700;font-size:13px;margin-bottom:10px">📋 Pendientes de completar</div>'
+      +pending.slice(0,3).map(function(t){return '<div class="pending-item"><span style="font-size:18px">'+thumbEm(t.type)+'</span><div style="flex:1"><div style="font-size:12px;font-weight:600">'+t.title+'</div><div style="font-size:10px;color:var(--mut)">'+t.dept+' · '+t.duration+'</div></div><button class="btn btn-p btn-sm" onclick="openViewModal('+t.id+')">Ver ahora</button></div>';}).join("")
+      +'</div>';
+  }
+  var recentHtml="";
+  if(mt.length>0){
+    recentHtml='<div style="font-weight:700;margin-bottom:12px;font-size:14px">📚 Recientes</div><div class="tut-grid">'+mt.slice(0,4).map(function(t){return renderTutCard(t,false);}).join("")+'</div>';
+  } else {
+    recentHtml='<div class="card"><div class="card-body" style="text-align:center;padding:42px 20px"><div style="font-size:50px;margin-bottom:11px">🎓</div><div style="font-weight:700;font-size:16px;margin-bottom:7px">¡Creá tu primer tutorial!</div><div style="color:var(--mut);font-size:13px;margin-bottom:17px">Desde URL, imagen, QR, grabación o archivo Office. Con IA.</div><button class="btn btn-p" onclick="openNewTut()">+ Crear tutorial</button></div></div>';
+  }
+  var upsell=currentUser.plan==="free"?'<div class="upsell-box"><div><div style="font-weight:700;font-size:13px">🚀 Desbloqueá Video, Voz, Quiz y Certificados</div><div style="font-size:12px;color:var(--mut);margin-top:2px">Pro $29/mes · Business $99/mes</div></div><button class="btn btn-p btn-sm" onclick="goPage(this.dataset.p)" data-p="my-plan">Ver planes →</button></div>':"";
+
+  return '<div class="page-head"><div><div class="page-title">Hola, '+currentUser.name.split(" ")[0]+' 👋</div><div class="page-sub">Plan <strong style="color:'+pc+'">'+plan.label+'</strong>'+(currentUser.workspace?" · "+currentUser.workspace:"")+'</div></div><button class="btn btn-p" onclick="openNewTut()">+ Crear Tutorial</button></div>'
+    +'<div class="stat-grid sg3">'
+    +'<div class="stat-card" style="border-top-color:#5B7CFA"><div class="stat-label">Tutoriales</div><div class="stat-val" style="color:#5B7CFA">'+mt.length+'</div></div>'
+    +'<div class="stat-card" style="border-top-color:#8B5CF6"><div class="stat-label">Certificados</div><div class="stat-val" style="color:#8B5CF6">'+mc.filter(function(c){return c.certified;}).length+'</div></div>'
+    +'<div class="stat-card" style="border-top-color:#F59E0B"><div class="stat-label">Pendientes</div><div class="stat-val" style="color:#F59E0B">'+pending.length+'</div></div>'
+    +'</div>'
+    +pendingHtml+recentHtml+upsell;
+}
+
+function renderMyTuts() {
+  var mt=myTuts().filter(function(t){return !searchVal||t.title.toLowerCase().includes(searchVal.toLowerCase());});
+  return '<div class="page-head"><div><div class="page-title">Mis Tutoriales</div><div class="page-sub">'+myTuts().length+' creados</div></div><button class="btn btn-p btn-sm" onclick="openNewTut()">+ Nuevo</button></div>'
+    +(mt.length?'<div class="tut-grid">'+mt.map(function(t){return renderTutCard(t,true);}).join("")+'</div>'
+    :'<div class="empty"><div style="font-size:44px">📚</div><div>No creaste tutoriales aún</div><button class="btn btn-p btn-sm" style="margin-top:12px" onclick="openNewTut()">Crear uno</button></div>');
+}
+
+function renderAssigned() {
+  var at=assignedTuts();
+  if(!at.length) return '<div class="page-head"><div><div class="page-title">Asignados</div></div></div><div class="empty"><div style="font-size:44px">📋</div><div>No tenés tutoriales asignados</div></div>';
+  var mc=myCompls();
+  return '<div class="page-head"><div><div class="page-title">Tutoriales Asignados</div><div class="page-sub">'+at.length+' asignados</div></div></div>'
+    +'<div>'+at.map(function(t){
+      var c=mc.find(function(x){return x.tutId===t.id;});
+      return '<div class="assigned-item">'
+        +'<div style="width:42px;height:42px;border-radius:9px;background:'+thumbBg(t.type)+';display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0">'+thumbEm(t.type)+'</div>'
+        +'<div style="flex:1"><div style="font-weight:600;font-size:13px">'+t.title+'</div><div style="font-size:10.5px;color:var(--mut);margin-top:2px">'+t.dept+' · '+t.duration+' · '+t.lang+'</div>'+(c?'<div style="font-size:10.5px;color:var(--grn);margin-top:2px">✓ Completado · Score: '+c.score+'%'+(c.certified?" · 🎓 Certificado":"")+'</div>':"")+'</div>'
+        +'<div style="display:flex;gap:7px;flex-wrap:wrap">'
+        +(c?'<span class="badge b-grn">✓ Listo</span>':'<button class="btn btn-p btn-sm" onclick="openViewModal('+t.id+')">Empezar</button>')
+        +(t.quizOn&&!c?'<button class="btn btn-s btn-sm" onclick="openQuizModal('+t.id+')">🧠 Quiz</button>':"")
+        +(t.certOn&&c&&c.certified?'<button class="btn btn-s btn-sm" onclick="openCertModal('+t.id+')" style="color:var(--v2)">🎓 Cert.</button>':"")
+        +'</div></div>';
+    }).join("")+'</div>';
+}
+
+function renderFavs() {
+  var favs=myTuts().filter(function(t){return t.favorite;});
+  return '<div class="page-head"><div><div class="page-title">Favoritos ⭐</div></div></div>'
+    +(favs.length?'<div class="tut-grid">'+favs.map(function(t){return renderTutCard(t,false);}).join("")+'</div>'
+    :'<div class="empty"><div style="font-size:44px">⭐</div><div>Marcá tutoriales como favoritos</div></div>');
+}
+
+function renderTemplates() {
+  return '<div class="page-head"><div><div class="page-title">Templates de Industria</div><div class="page-sub">Plantillas listas para personalizar con IA</div></div></div>'
+    +'<div class="tut-grid">'+TEMPLATES.map(function(t){return '<div class="template-card"><div style="font-size:32px;margin-bottom:9px">'+t.icon+'</div><div style="font-weight:700;font-size:13px;margin-bottom:4px">'+t.title+'</div><div style="font-size:11px;color:var(--mut);margin-bottom:10px;line-height:1.5">'+t.desc+'</div><span class="tag">'+t.dept+'</span><div style="margin-top:10px"><button class="btn btn-p btn-sm" style="width:100%" onclick="toast(this.dataset.m)" data-m="Template cargado">+ Usar template</button></div></div>';}).join("")+'</div>';
+}
+
+function renderExplore() {
+  var pub=tuts.filter(function(t){return t.userId!==currentUser.id&&t.status==="published"&&(!searchVal||t.title.toLowerCase().includes(searchVal.toLowerCase()));});
+  return '<div class="page-head"><div><div class="page-title">Explorar</div><div class="page-sub">Tutoriales públicos de la comunidad</div></div></div>'
+    +(pub.length?'<div class="tut-grid">'+pub.map(function(t){return renderTutCard(t,false);}).join("")+'</div>'
+    :'<div class="empty"><div style="font-size:44px">🌎</div><div>No hay tutoriales públicos aún</div></div>');
+}
+
+function renderCerts() {
+  var mc=myCompls().filter(function(c){return c.certified;});
+  return '<div class="page-head"><div><div class="page-title">Mis Certificados 🎓</div><div class="page-sub">'+mc.length+' obtenidos</div></div></div>'
+    +(mc.length?mc.map(function(c){
+      var t=getTut(c.tutId);
+      if(!t)return "";
+      return '<div class="cert-wrap" style="margin-bottom:14px"><div class="cert-seal">🎓</div><div class="cert-lbl">TutorAI · Certificado de Capacitación</div><div style="font-size:13px;color:var(--mut);margin-bottom:5px">Se certifica que</div><div class="cert-name">'+currentUser.name+'</div><div style="font-size:13px;color:var(--lt);margin-bottom:4px">completó exitosamente</div><div style="font-weight:700;font-size:16px;margin-bottom:4px">'+t.title+'</div><div style="font-size:12px;color:var(--mut);margin-bottom:13px">Score: <strong style="color:var(--grn)">'+c.score+'%</strong> · '+c.date+'</div><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn btn-s btn-sm">⬇ Descargar PDF</button><button class="btn btn-s btn-sm">🔗 LinkedIn</button></div></div>';
+    }).join("")
+    :'<div class="empty"><div style="font-size:50px">🎓</div><div>Completá tutoriales con quiz para obtener certificados</div></div>');
+}
+
+function renderMyPlan() {
+  var plan=myPlan();
+  var mt=myTuts();
+  var pc=planColor(currentUser.plan);
+  var pct=plan.tuts===999?20:Math.min(100,Math.round((mt.length/plan.tuts)*100));
+  var upCards=currentUser.plan==="free"?'<div class="g2" style="margin-top:16px">'+Object.entries(PLANS).filter(function(e){return e[0]!=="free";}).map(function(entry){var k=entry[0],pl=entry[1];return '<div class="plan-card'+(k==="pro"?" featured":"")+'"><div style="font-size:20px;margin-bottom:5px">'+(k==="pro"?"💼":"🏢")+'</div><div style="font-weight:800;font-size:14px">'+pl.label+'</div><div class="plan-price" style="color:'+pl.color+'">'+pl.price+'<span style="font-size:11px;font-weight:400;color:var(--mut)">/mes</span></div>'+["Tutoriales: "+(pl.tuts===999?"Ilimitados":pl.tuts),"Video + Voz + Texto",pl.langs+" idiomas",pl.seats+" seats de equipo","Quiz + Certificados","Asignación de tutoriales"].map(function(f){return '<div class="plan-feat"><span style="color:var(--grn)">✓</span> '+f+'</div>';}).join("")+'<button class="btn btn-p btn-full btn-sm" style="margin-top:13px;font-size:12px" onclick="toast(this.dataset.m)" data-m="Redirigiendo a pago...">Actualizar a '+pl.label+'</button></div>';}).join("")+'</div>':"";
+  return '<div class="page-head"><div><div class="page-title">Mi Plan</div></div></div>'
+    +'<div class="card" style="padding:19px;margin-bottom:17px"><div style="display:flex;align-items:center;gap:12px;margin-bottom:15px"><div style="width:48px;height:48px;border-radius:13px;background:'+pc+'22;display:flex;align-items:center;justify-content:center;font-size:22px">'+(currentUser.plan==="free"?"🆓":currentUser.plan==="pro"?"💼":"🏢")+'</div><div><div style="font-weight:800;font-size:17px">'+plan.label+'</div><div style="color:var(--mut);font-size:12px">'+(plan.price==="$0"?"Gratis":plan.price+"/mes")+" · Activo"+'</div></div><span class="badge" style="margin-left:auto;background:'+pc+'22;color:'+pc+'">'+currentUser.plan.toUpperCase()+'</span></div>'
+    +'<div style="margin-bottom:13px"><div style="font-size:11px;color:var(--mut);margin-bottom:4px">Tutoriales: '+mt.length+'/'+(plan.tuts===999?"∞":plan.tuts)+'</div><div class="pbar-wrap"><div class="pbar-fill" style="width:'+pct+'%"></div></div></div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:5px">'+plan.types.map(function(t){return '<span class="tag">'+(t==="text"?"📄 Texto":t==="voice"?"🎙️ Voz":"🎬 Video")+'</span>';}).join("")+'<span class="tag">🌐 '+(plan.langs===1?"Solo Español":plan.langs+" idiomas")+'</span><span class="tag">👥 '+plan.seats+' seat'+(plan.seats>1?"s":"")+'</span>'
+    +'</div></div>'+upCards;
+}
+
+// ═══════════════════════════════════════════════════
+// TUT CARD RENDER
+// ═══════════════════════════════════════════════════
+function renderTutCard(t, showActions) {
+  var acts="";
+  if(showActions){
+    acts='<div class="tut-actions">'
+      +'<button class="icon-btn" style="width:25px;height:25px;font-size:11px" onclick="openViewModal('+t.id+')" title="Ver">▶</button>'
+      +(t.quizOn?'<button class="icon-btn" style="width:25px;height:25px;font-size:11px" onclick="openQuizModal('+t.id+')" title="Quiz">🧠</button>':"")
+      +'<button class="icon-btn" style="width:25px;height:25px;font-size:11px" onclick="openChatModal('+t.id+')" title="Chat IA">💬</button>'
+      +'<button class="icon-btn" style="width:25px;height:25px;font-size:11px" onclick="toast(this.dataset.m)" data-m="Descargando PDF..." title="Descargar">⬇</button>'
+      +'<button class="icon-btn" style="width:25px;height:25px;font-size:11px" onclick="shareLink(t.id)" title="Compartir">🔗</button>'
+      +'<button class="icon-btn" style="width:25px;height:25px;font-size:11px;color:'+(t.favorite?"var(--org)":"var(--mut)")+'" onclick="toggleFav('+t.id+')" title="Favorito">⭐</button>'
+      +'<button class="icon-btn btn-d" style="width:25px;height:25px;font-size:11px;margin-left:auto" onclick="deleteTut('+t.id+')">🗑</button>'
+      +'</div>';
+  } else {
+    acts='<button class="btn btn-s btn-sm" style="width:100%;justify-content:center" onclick="openViewModal('+t.id+')">▶ Ver Tutorial</button>';
+  }
+  return '<div class="tut-card">'
+    +'<div class="tut-thumb" style="background:'+thumbBg(t.type)+'" onclick="openViewModal('+t.id+')">'
+    +'<span>'+thumbEm(t.type)+'</span>'
+    +(t.favorite?'<span style="position:absolute;top:7px;right:7px;font-size:12px">⭐</span>':"")
+    +(t.quizOn?'<span style="position:absolute;top:7px;left:7px;font-size:10px;background:rgba(139,92,246,.75);color:#fff;padding:1px 5px;border-radius:4px;font-weight:700">QUIZ</span>':"")
+    +'</div>'
+    +'<div class="tut-body">'
+    +'<div class="tut-title" onclick="openViewModal('+t.id+')">'+t.title+'</div>'
+    +'<div class="tut-meta">'+tbadge(t.type)+'<span class="tag">'+t.lang+'</span>'+(t.dept?'<span class="tag">'+t.dept+'</span>':"")+'</div>'
+    +'<div class="tut-stats"><span>👁 '+t.views+'</span><span>✅ '+t.completions+'</span><span>⏱ '+t.duration+'</span></div>'
+    +acts
+    +'</div></div>';
+}
+
+// ═══════════════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════════════
+function toggleFav(id) {
+  var t=getTut(id);
+  if(t){ t.favorite=!t.favorite; goPage(currentPage); toast(t.favorite?"Agregado a favoritos":"Quitado de favoritos"); }
+}
+function deleteTut(id) {
+  tuts=tuts.filter(function(t){return t.id!==id;});
+  goPage(currentPage);
+  buildSidebar();
+  toast("Tutorial eliminado");
+}
+function changeUserPlan(uid, plan) {
+  var u=users.find(function(x){return x.id===uid;});
+  if(u){ u.plan=plan; toast("Plan actualizado a "+plan); }
+}
+function deleteUser(uid) {
+  users=users.filter(function(u){return u.id!==uid;});
+  goPage(currentPage);
+  buildSidebar();
+  toast("Usuario eliminado");
+}
+
+// ═══════════════════════════════════════════════════
+// MODAL SYSTEM
+// ═══════════════════════════════════════════════════
+function openModal(title, bodyHtml, footHtml, large) {
+  $("modal-title").textContent = title;
+  $("modal-body").innerHTML = bodyHtml;
+  $("modal-box").className = "modal" + (large?" modal-lg":"");
+  if(footHtml){ $("modal-foot").innerHTML=footHtml; show("modal-foot"); }
+  else hide("modal-foot");
+  show("modal-overlay");
+}
+function closeModal() { hide("modal-overlay"); }
+function closeModalOnBg(e) { if(e.target===$("modal-overlay")) closeModal(); }
+
+// ═══════════════════════════════════════════════════
+// VIEW MODAL
+// ═══════════════════════════════════════════════════
+function openViewModal(id) {
+  var t=getTut(id);
+  if(!t)return;
+  var mc=myCompls();
+  var done=mc.find(function(c){return c.tutId===t.id;});
+  var doneHtml=done?'<div style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:9px;padding:11px;margin-bottom:13px;display:flex;align-items:center;gap:10px"><span style="font-size:19px">✅</span><div><div style="font-weight:600;font-size:13px;color:var(--grn)">Completado</div><div style="font-size:11px;color:var(--mut)">Score: '+done.score+'% · '+done.date+(done.certified?" · 🎓 Certificado disponible":"")+'</div></div>'+(done.certified?'<button class="btn btn-s btn-sm" style="margin-left:auto;color:var(--v2)" onclick="openCertModal('+t.id+')">🎓 Ver cert.</button>':"")+'</div>':"";
+  var stats=[["👁 Vistas",t.views,"var(--acc)"],["✅ Completaciones",t.completions,"var(--grn)"],["📅 Creado",t.created,"var(--mut)"],["⏱ Duración",t.duration,"var(--org)"]];
+  var statsHtml='<div class="g4" style="margin-bottom:15px">'+stats.map(function(s){return '<div style="padding:9px;background:var(--bg);border-radius:8px;border:1px solid var(--bdr)"><div style="font-size:9.5px;color:var(--mut);margin-bottom:2px">'+s[0]+'</div><div style="font-weight:700;font-size:13px;color:'+s[2]+'">'+s[1]+'</div></div>';}).join("")+'</div>';
+  var body='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:15px">'+tbadge(t.type)+sbadge(t.status)+'<span class="tag">'+t.lang+'</span>'+(t.quizOn?'<span class="badge b-purple">🧠 Quiz</span>':"")+(t.certOn?'<span class="badge" style="background:rgba(6,182,212,.12);color:var(--cyn,#06B6D4)">🎓 Certificado</span>':"")+'</div>'
+    +statsHtml+doneHtml
+    +'<div style="text-align:center;padding:28px 0;background:var(--bg);border-radius:10px;border:1px solid var(--bdr);margin-bottom:13px"><div style="font-size:46px;margin-bottom:8px">'+thumbEm(t.type)+'</div><div style="font-weight:700;margin-bottom:4px">Contenido del Tutorial</div><div style="color:var(--mut);font-size:12px;margin-bottom:13px">Generado por IA · '+t.lang+'</div><button class="btn btn-p btn-sm">▶ Reproducir</button></div>'
+    +'<div style="display:flex;gap:7px;flex-wrap:wrap">'
+    +'<button class="btn btn-s btn-sm" onclick="toast(this.dataset.m)" data-m="Descargando PDF...">⬇ PDF</button>'
+    +'<button class="btn btn-s btn-sm" onclick="toast(this.dataset.m)" data-m="Link copiado">🔗 Compartir</button>'
+    +'<button class="btn btn-s btn-sm" style="color:'+(t.favorite?"var(--org)":"inherit")+'" onclick="toggleFav('+t.id+');closeModal()">⭐ '+(t.favorite?"Quitar fav":"Favorito")+'</button>'
+    +'<button class="btn btn-s btn-sm" onclick="closeModal();openChatModal('+t.id+')">💬 Chat IA</button>'
+    +(t.quizOn?'<button class="btn btn-p btn-sm" onclick="closeModal();openQuizModal('+t.id+')">🧠 Hacer Quiz</button>':"")
+    +'</div>';
+  openModal(t.title, body, null, true);
+}
+
+// ═══════════════════════════════════════════════════
+// QUIZ MODAL
+// ═══════════════════════════════════════════════════
+var quizState = {};
+function openQuizModal(id) {
+  var t=getTut(id);
+  if(!t)return;
+  quizState = {tutId:id,answers:{},submitted:false,questions:null};
+  var body='<div class="ai-loader"><div class="ai-orb">🧠</div><div style="font-weight:700">Generando preguntas con IA...</div><div style="color:var(--mut);font-size:12px">Claude crea preguntas específicas para este tutorial</div></div>';
+  openModal("🧠 Quiz — "+t.title, body, null, true);
+  generateQuiz(t);
+}
+
+async function generateQuiz(t) {
+  var prompt='Genera 4 preguntas de opción múltiple en '+t.lang+' sobre: "'+t.title+'". Responde SOLO con JSON válido sin markdown: [{"question":"texto","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0}]. "correct" es el índice 0-3 de la respuesta correcta.';
+  var r=await callAI(prompt);
+  var questions;
+  try {
+    questions=JSON.parse(r.replace(/```json|```/g,"").trim()).slice(0,4);
+  } catch(e) {
+    questions=[
+      {question:"¿Cuál es el primer paso para "+t.title.toLowerCase()+"?",options:["A) Verificar acceso","B) Saltar pasos","C) Ignorar instrucciones","D) Improvisar"],correct:0},
+      {question:"¿Qué hacer antes de finalizar el proceso?",options:["A) Cerrar sin guardar","B) Verificar y guardar","C) Nada especial","D) Llamar a soporte"],correct:1},
+      {question:"¿Cuándo se considera completado?",options:["A) Al abrirlo","B) A la mitad","C) Al completar todos los pasos","D) Nunca"],correct:2},
+      {question:"¿Por qué seguir el proceso correctamente?",options:["A) No es importante","B) Mejora eficiencia y reduce errores","C) Solo por cumplir reglas","D) Es opcional"],correct:1}
+    ];
+  }
+  quizState.questions=questions;
+  renderQuizQuestions();
+}
+
+function renderQuizQuestions() {
+  var qs=quizState.questions;
+  var html='<div style="margin-bottom:14px;font-size:12px;color:var(--mut)">Respondé las '+qs.length+' preguntas</div>'
+    +qs.map(function(q,qi){
+      return '<div class="quiz-q"><div style="font-weight:600;font-size:13px;margin-bottom:7px">'+(qi+1)+'. '+q.question+'</div>'
+        +q.options.map(function(opt,oi){
+          var sel=quizState.answers[qi]===oi;
+          return '<div class="quiz-opt'+(sel?" sel":"")+'" onclick="selectAnswer('+qi+','+oi+')"><div class="radio-dot"></div>'+opt+'</div>';
+        }).join("")+'</div>';
+    }).join("");
+  $("modal-body").innerHTML=html;
+  var answered=Object.keys(quizState.answers).length;
+  $("modal-foot").innerHTML='<button class="btn btn-s btn-sm" onclick="closeModal()">Cancelar</button><button class="btn btn-p btn-sm" onclick="submitQuiz()" '+(answered<qs.length?"disabled":"")+'>Enviar ('+answered+'/'+qs.length+')</button>';
+  show("modal-foot");
+}
+
+function selectAnswer(qi,oi) {
+  if(quizState.submitted)return;
+  quizState.answers[qi]=oi;
+  renderQuizQuestions();
+}
+
+function submitQuiz() {
+  var qs=quizState.questions;
+  var correct=0;
+  qs.forEach(function(q,i){if(quizState.answers[i]===q.correct)correct++;});
+  var score=Math.round((correct/qs.length)*100);
+  var t=getTut(quizState.tutId);
+  var emoji=score>=80?"🎉":score>=60?"👍":"💪";
+  var msg=score>=80?"¡Excelente! Podés obtener tu certificado.":score>=60?"Buen trabajo.":"Repasá el tutorial e intentá de nuevo.";
+  var resultsGrid='<div class="sg2 stat-grid">'+qs.map(function(q,i){var ok=quizState.answers[i]===q.correct;return '<div style="padding:9px 11px;border-radius:8px;background:'+(ok?"rgba(16,185,129,.08)":"rgba(239,68,68,.08)")+';border:1px solid '+(ok?"rgba(16,185,129,.22)":"rgba(239,68,68,.22)")+';"><div style="font-size:10.5px;font-weight:700;color:'+(ok?"var(--grn)":"var(--red)")+'">'+(ok?"✓ Correcta":"✗ Incorrecta")+'</div><div style="font-size:10.5px;margin-top:1px;color:var(--lt)">'+q.question.slice(0,55)+'…</div></div>';}).join("")+'</div>';
+  $("modal-body").innerHTML='<div style="text-align:center;padding:18px 0"><div style="font-size:54px;margin-bottom:12px">'+emoji+'</div><div style="font-size:22px;font-weight:800;margin-bottom:7px">Score: <span style="color:'+(score>=80?"var(--grn)":score>=60?"var(--org)":"var(--red)")+'">'+score+'%</span></div><div style="color:var(--mut);font-size:13px;margin-bottom:18px">'+msg+'</div>'+resultsGrid+'</div>';
+  
+  // Save completion
+  if(score>=60&&t){
+    var existing=completions.find(function(c){return c.userId===currentUser.id&&c.tutId===t.id;});
+    if(!existing){
+      completions.push({userId:currentUser.id,tutId:t.id,score:score,date:new Date().toISOString().slice(0,10),certified:t.certOn});
+    }
+  }
+  
+  var footHtml='<button class="btn btn-s btn-sm" onclick="closeModal()">Cerrar</button>';
+  if(score>=60&&t&&t.certOn) footHtml+='<button class="btn btn-p btn-sm" onclick="closeModal();openCertModal('+t.id+')">🎓 Obtener Certificado</button>';
+  if(score<60) footHtml+='<button class="btn btn-s btn-sm" onclick="quizState.answers={};renderQuizQuestions()">Intentar de nuevo</button>';
+  $("modal-foot").innerHTML=footHtml;
+  show("modal-foot");
+  toast("Quiz completado! Score: "+score+"%");
+  buildSidebar();
+}
+
+// ═══════════════════════════════════════════════════
+// CERT MODAL
+// ═══════════════════════════════════════════════════
+function openCertModal(id) {
+  var t=getTut(id);
+  if(!t)return;
+  var c=completions.find(function(x){return x.userId===currentUser.id&&x.tutId===id;});
+  var score=c?c.score:85;
+  var date=c?c.date:new Date().toISOString().slice(0,10);
+  var verifyId="TUTAI-"+id+"-"+currentUser.id+"-"+Date.now().toString(36).toUpperCase();
+  var body='<div class="cert-wrap"><div class="cert-seal">🎓</div><div class="cert-lbl">TutorAI · Certificado de Capacitación Profesional</div><div style="font-size:13px;color:var(--mut);margin:7px 0 4px">Se certifica que</div><div class="cert-name">'+currentUser.name+'</div><div style="font-size:13px;color:var(--lt);margin:4px 0">completó exitosamente</div><div style="font-weight:700;font-size:16px;margin:5px 0 4px">'+t.title+'</div><div style="display:flex;gap:18px;justify-content:center;margin:10px 0;font-size:12px;color:var(--mut)"><span>📊 Score: <strong style="color:var(--grn)">'+score+'%</strong></span><span>📅 '+date+'</span><span>⏱ '+t.duration+'</span></div><div style="font-size:9.5px;color:var(--mut);margin-top:12px;border-top:1px solid var(--bdr);padding-top:9px">ID: '+verifyId+' · tutorai.app/verify</div></div>'
+    +'<div style="display:flex;gap:8px;justify-content:center;margin-top:15px;flex-wrap:wrap"><button class="btn btn-p" onclick="toast(this.dataset.m)" data-m="Descargando PDF del certificado...">⬇ Descargar PDF</button><button class="btn btn-s" onclick="toast(this.dataset.m)" data-m="Compartiendo en LinkedIn...">🔗 LinkedIn</button><button class="btn btn-s" onclick="closeModal()">Cerrar</button></div>';
+  openModal("🎓 Certificado de Capacitación", body, null, true);
+}
+
+// ═══════════════════════════════════════════════════
+// CHAT MODAL
+// ═══════════════════════════════════════════════════
+var chatMsgs=[];
+var chatTutId=null;
+function openChatModal(id) {
+  var t=getTut(id);
+  if(!t)return;
+  chatTutId=id;
+  chatMsgs=[{role:"bot",text:"¡Hola! Soy tu asistente para este tutorial. Preguntame cualquier duda sobre el contenido. ¿En qué te ayudo?"}];
+  renderChat(t);
+}
+
+function renderChat(t) {
+  var msgsHtml=chatMsgs.map(function(m){return '<div class="chat-msg '+m.role+'">'+(m.loading?"●●●":m.text)+'</div>';}).join("");
+  var body='<div class="chat-container"><div class="chat-msgs" id="chat-msgs-area">'+msgsHtml+'</div><div class="chat-input-row"><input type="text" id="chat-inp" placeholder="Preguntá algo..." onkeydown="if(event.key==String.fromCharCode(13))sendChat()"><button class="btn btn-p btn-sm" onclick="sendChat()">Enviar</button></div></div>';
+  openModal("💬 Asistente IA — "+(t?t.title:""), body, null, false);
+  var area=$("chat-msgs-area");
+  if(area) area.scrollTop=area.scrollHeight;
+}
+
+async function sendChat() {
+  var inp=$("chat-inp");
+  if(!inp)return;
+  var q=inp.value.trim();
+  if(!q)return;
+  inp.value="";
+  var t=getTut(chatTutId);
+  chatMsgs.push({role:"user",text:q});
+  chatMsgs.push({role:"bot",text:"●●●",loading:true});
+  updateChatUI();
+  var sys=t?"Eres un asistente de capacitacion conciso para el tutorial de "+t.dept+". Responde en "+t.lang+", maximo 3 parrafos cortos.":"Eres un asistente de capacitacion.";
+  var r=await callAI("Pregunta: "+q,sys);
+  chatMsgs[chatMsgs.length-1]={role:"bot",text:r||"No pude conectar. Intentá de nuevo."};
+  updateChatUI();
+}
+
+function updateChatUI() {
+  var area=$("chat-msgs-area");
+  if(!area)return;
+  area.innerHTML=chatMsgs.map(function(m){return '<div class="chat-msg '+m.role+'">'+(m.loading?"●●●":m.text)+'</div>';}).join("");
+  area.scrollTop=area.scrollHeight;
+}
+
+// ═══════════════════════════════════════════════════
+// NEW TUTORIAL MODAL
+// ═══════════════════════════════════════════════════
+var newTutState={};
+function openNewTut() {
+  newTutState={step:1,src:"url",out:currentUser.role==="owner"?"video":(myPlan().types[0]||"text"),lang:"Español",url:"",title:"",dept:"RRHH",quizOn:true,certOn:true,assignTo:[],steps:[]};
+  renderNewTutStep();
+}
+
+function renderNewTutStep() {
+  var s=newTutState;
+  var titles=["","📥 Fuente del contenido","⚙️ Configuración","🤖 Generando con IA...","✅ Tutorial listo — Editá y publicá"];
+  var body="",foot="";
+
+  if(s.step===1){
+    var srcs=[{id:"url",icon:"🔗",label:"URL / Link"},{id:"image",icon:"🖼️",label:"Imagen"},{id:"qr",icon:"◼️",label:"Código QR"},{id:"barcode",icon:"▦",label:"Código de Barras"},{id:"upload",icon:"📁",label:"Archivo Office"},{id:"audio",icon:"🎤",label:"Grabación"}];
+    body='<div class="form-group"><label>Fuente de contenido</label><div class="src-grid">'+srcs.map(function(sr){return '<div class="src-item'+(s.src===sr.id?" on":"")+ '" data-srcid="'+sr.id+'" onclick="newTutState.src=this.dataset.srcid;renderNewTutStep()"><div style="font-size:18px;margin-bottom:4px">'+sr.icon+'</div><div style="font-size:10.5px;font-weight:700">'+sr.label+'</div></div>';}).join("")+'</div></div>';
+    if(s.src==="url") body+='<div class="form-group"><label>URL o enlace</label><input type="text" placeholder="https://..." value="'+s.url+'" oninput="newTutState.url=this.value"></div>';
+    else body+='<div class="drop-zone"><div style="font-size:22px;margin-bottom:6px">'+(s.src==="audio"?"🎤":s.src==="upload"?"📁":"🖼️")+'</div><div style="font-weight:600;font-size:12.5px;margin-bottom:3px">Subir archivo</div><button class="btn btn-s btn-sm" style="margin-top:8px">Elegir archivo</button></div>';
+    foot='<button class="btn btn-s btn-sm" onclick="closeModal()">Cancelar</button><button class="btn btn-p btn-sm" onclick="newTutState.step=2;renderNewTutStep()">Continuar →</button>';
+  }
+
+  else if(s.step===2){
+    var plan=currentUser.role==="owner"?{types:["text","voice","video"],langs:9}:myPlan();
+    var outs=[{id:"text",icon:"📄",label:"Texto"},{id:"voice",icon:"🎙️",label:"Voz"},{id:"video",icon:"🎬",label:"Video"}];
+    var availOuts=currentUser.role==="owner"?outs:outs.filter(function(o){return plan.types.indexOf(o.id)>-1;});
+    var maxL=currentUser.role==="owner"?9:(plan.langs||1);
+    var depts=["RRHH","TI","Finanzas","Ventas","Marketing","Operaciones","Legal","Compras","Producción"];
+    body='<div class="form-group"><label>Título del tutorial</label><input type="text" placeholder="Ej: Cómo procesar órdenes en SAP..." value="'+s.title+'" oninput="newTutState.title=this.value"></div>'
+      +'<div class="g2"><div class="form-group"><label>Departamento</label><select onchange="newTutState.dept=this.value">'+depts.map(function(d){return '<option'+(s.dept===d?" selected":"")+'>'+d+'</option>';}).join("")+'</select></div>'
+      +'<div class="form-group"><label>Idioma</label><select onchange="newTutState.lang=this.value">'+LANGS.slice(0,maxL).map(function(l){return '<option'+(s.lang===l?" selected":"")+'>'+l+'</option>';}).join("")+'</select></div></div>'
+    var availOuts=currentUser.role==="owner"?outs:outs.filter(function(o){return plan.types.indexOf(o.id)>-1;});
+      +'<div style="background:var(--bg);border:1px solid var(--bdr);border-radius:9px;padding:13px;margin-bottom:13px"><div style="font-weight:700;font-size:12.5px;margin-bottom:10px">⚙️ Opciones</div>'
+      +'<div class="toggle-row" onclick="newTutState.quizOn=!newTutState.quizOn;renderNewTutStep()"><div class="tog '+(s.quizOn?"on":"off")+'"></div><span>Activar quiz al finalizar</span><span class="badge b-purple" style="margin-left:auto">🧠 +valor</span></div>'
+      +'<div class="toggle-row" style="margin-top:8px" onclick="newTutState.certOn=!newTutState.certOn;renderNewTutStep()"><div class="tog '+(s.certOn?"on":"off")+'"></div><span>Emitir certificado al aprobar</span><span class="badge" style="margin-left:auto;background:rgba(6,182,212,.12);color:#06B6D4">🎓 +valor</span></div>'
+      +'</div>';
+    var otherUsers=users.filter(function(u){return u.id!==currentUser.id;});
+    if(otherUsers.length>0){
+      body+='<div class="form-group"><label>Asignar a miembros</label>'+otherUsers.map(function(u){return '<label style="display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--bg);border:1px solid var(--bdr);border-radius:7px;cursor:pointer;margin-bottom:6px"><input type="checkbox" style="width:auto"'+(s.assignTo.indexOf(u.id)>-1?" checked":"")+' onchange="if(this.checked){newTutState.assignTo.push('+u.id+')}else{newTutState.assignTo=newTutState.assignTo.filter(function(x){return x!=='+u.id+'});}"><div class="ava" style="width:24px;height:24px;font-size:9px">'+u.avatar+'</div><span style="font-size:12px">'+u.name+'</span><span class="badge b-gray" style="margin-left:auto">'+u.plan+'</span></label>';}).join("")+'</div>';
+    }
+    foot='<button class="btn btn-s btn-sm" onclick="newTutState.step=1;renderNewTutStep()">← Atrás</button><button class="btn btn-p btn-sm" onclick="runAIGeneration()">🤖 Generar con IA</button>';
+  }
+
+  else if(s.step===3){
+    var aiSteps=["Analizando fuente...","Extrayendo contenido...","Estructurando pasos...","Traduciendo al "+s.lang+"...","Aplicando formato "+s.out+"...","Optimizando...","¡Listo!"];
+    body='<div class="ai-loader"><div class="ai-orb">🤖</div><div style="font-weight:700;font-size:15px">Claude AI generando tu tutorial</div><div style="width:100%;max-width:370px" id="ai-steps-list">'+aiSteps.map(function(st,i){return '<div class="ai-step" id="ai-step-'+i+'">⭕ '+st+'</div>';}).join("")+'</div><div style="width:75%;max-width:280px"><div class="prog-bar"><div class="prog-fill" id="ai-prog" style="width:0%"></div></div><div style="font-size:10px;color:var(--mut);text-align:center;margin-top:3px" id="ai-pct">0%</div></div></div>';
+    foot="";
+  }
+
+  else if(s.step===4){
+    var flagsHtml='<div style="display:flex;gap:5px;margin-bottom:13px;flex-wrap:wrap">'+(s.quizOn?'<span class="badge b-purple">🧠 Quiz activado</span>':"")+(s.certOn?'<span class="badge" style="background:rgba(6,182,212,.12);color:#06B6D4">🎓 Certificado activado</span>':"")+(s.assignTo.length>0?'<span class="badge b-blue">👥 Asignado a '+s.assignTo.length+' persona'+(s.assignTo.length>1?"s":"")+'</span>':"")+'</div>';
+    body='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;gap:8px;flex-wrap:wrap"><div style="display:flex;align-items:center;gap:7px;padding:8px 12px;background:rgba(16,185,129,.07);border-radius:8px;border:1px solid rgba(16,185,129,.15);flex:1"><span style="color:var(--grn)">✓</span> <span style="font-weight:600;color:var(--grn);font-size:12px">Generado en '+s.lang+' · '+s.out+'</span></div></div>'
+      +flagsHtml
+      +s.steps.map(function(st,i){return '<div class="step-box"><div class="step-num">Paso '+st.num+'</div><div style="font-weight:700;font-size:12.5px;margin-bottom:3px">'+st.title+'</div><div style="font-size:12px;color:var(--lt);line-height:1.7">'+st.body+'</div></div>';}).join("");
+    foot='<button class="btn btn-s btn-sm" onclick="newTutState={};openNewTut()">Crear otro</button><button class="btn btn-p btn-sm" onclick="saveTut()">✓ Publicar Tutorial</button>';
+  }
+
+  openModal(titles[s.step],body,foot||null,true);
+  if(s.step!==3) hide("modal-foot"); else hide("modal-foot");
+  if(foot){ $("modal-foot").innerHTML=foot; show("modal-foot"); }
+}
+
+async function runAIGeneration() {
+  newTutState.step=3;
+  renderNewTutStep();
+  var s=newTutState;
+  var aiStepsData=["Analizando fuente...","Extrayendo contenido...","Estructurando pasos...","Traduciendo al "+s.lang+"...","Aplicando formato "+s.out+"...","Optimizando...","¡Listo!"];
+  
+  for(var i=0;i<aiStepsData.length-1;i++){
+    await new Promise(function(r){setTimeout(r,480+Math.random()*300);});
+    var el=document.getElementById("ai-step-"+i);
+    if(el){el.className="ai-step done";el.textContent="✓ "+aiStepsData[i];}
+    var next=document.getElementById("ai-step-"+(i+1));
+    if(next){next.className="ai-step cur";}
+    var prog=document.getElementById("ai-prog");
+    var pct=document.getElementById("ai-pct");
+    var p=Math.round(((i+1)/aiStepsData.length)*100);
+    if(prog)prog.style.width=p+"%";
+    if(pct)pct.textContent=p+"%";
+  }
+
+  var prompt='Crea un tutorial de capacitacion en '+s.lang+' sobre: '+(s.title||s.url||'el tema indicado')+'. Area: '+s.dept+'. Tipo: '+(s.out==='video'?'video':s.out==='voice'?'audio':'texto')+'. Formato: PASO 1: titulo, descripcion. PASO 2: titulo, descripcion. Hasta PASO 5. Luego TIEMPO: X minutos.';
+
+
+  var r=await callAI(prompt);
+  var raw=r||fallbackContent(s.title||s.url,s.dept);
+  var steps=parseSteps(raw);
+  newTutState.steps=steps.length?steps:[{num:"1",title:"Proceso completo",body:raw}];
+  
+  var last=document.getElementById("ai-step-"+(aiStepsData.length-1));
+  if(last){last.className="ai-step done";last.textContent="✓ "+aiStepsData[aiStepsData.length-1];}
+  var prog=document.getElementById("ai-prog");
+  if(prog)prog.style.width="100%";
+  
+  newTutState.step=4;
+  renderNewTutStep();
+}
+
+function parseSteps(txt) {
+  var steps=[],rx=/PASO\s*(\d+)[:\-]\s*([^\n]+)\n([\s\S]*?)(?=PASO\s*\d|TIEMPO|$)/gi,m;
+
+
+  while((m=rx.exec(txt||""))!==null) steps.push({num:m[1],title:m[2].trim(),body:m[3].replace(/\n+$/,"").trim()});
+
+  return steps;
+}
+
+function fallbackContent(topic,dept) {
+  return "PASO 1: Preparacion inicial\nVerifica tus credenciales y accede al sistema.\n\nPASO 2: Acceso al modulo\nAbre la seccion requerida desde el menu principal.\n\nPASO 3: Ingreso de datos\nCompleta todos los campos requeridos correctamente.\n\nPASO 4: Procesamiento\nEjecuta la accion principal sin saltear pasos.\n\nPASO 5: Verificacion y cierre\nConfirma el resultado y guarda segun el protocolo de "+dept+".\n\nTIEMPO: 8 minutos";
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+}
+
+function saveTut() {
+  var s=newTutState;
+  var newT={id:++nextId,userId:currentUser.id,title:s.title||s.url||"Tutorial sin título",type:s.out,lang:s.lang,dept:s.dept,views:0,completions:0,status:"published",created:new Date().toISOString().slice(0,10),duration:"~8 min",quizOn:s.quizOn,certOn:s.certOn,assignedTo:s.assignTo,favorite:false,steps:s.steps};
+  tuts.unshift(newT);
+  closeModal();
+  buildSidebar();
+  goPage(currentPage);
+  toast("¡Tutorial creado y publicado!");
+}
+
+// ═══════════════════════════════════════════════════
+// KEYBOARD
+// ═══════════════════════════════════════════════════
+document.addEventListener("keydown",function(e){
+  if(e.key==="Enter"&&!isHidden("auth-page")) doAuth();
+});
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+// Ready!
+</script>
+</body>
+</html>
