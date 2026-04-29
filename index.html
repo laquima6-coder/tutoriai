@@ -1,0 +1,1679 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TutorAI — Capacitación Empresarial con IA</title>
+  <meta name="description" content="Generá tutoriales de capacitación con IA en segundos. Video, voz y texto en 9 idiomas."/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%235B7CFA'/><text y='.9em' font-size='70' x='15'>T</text></svg>"/>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #07090F; color: #DDE4F5; font-family: sans-serif; }
+    #root { min-height: 100vh; }
+    .loading-screen {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      background: #07090F; flex-direction: column; gap: 16px;
+    }
+    .loading-logo {
+      width: 60px; height: 60px; background: linear-gradient(135deg,#5B7CFA,#8B5CF6);
+      border-radius: 16px; display: flex; align-items: center; justify-content: center;
+      font-size: 28px; font-weight: 800; color: white; animation: pulse 1.5s ease-in-out infinite;
+    }
+    .loading-text { color: #4A5A7A; font-size: 14px; }
+    @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.07)} }
+  </style>
+</head>
+<body>
+  <div id="root">
+    <div class="loading-screen">
+      <div class="loading-logo">T</div>
+      <div class="loading-text">Cargando TutorAI...</div>
+    </div>
+  </div>
+
+  <script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef } = React;
+
+
+/* ─── DATOS ─────────────────────────────────────────────────── */
+const OWNER = { id:0, email:"admin@tutorai.com", password:"admin123", name:"Tincho", role:"owner", avatar:"TI", plan:"owner" };
+
+const INIT_USERS = [
+  { id:2, name:"Carlos López",  email:"carlos@demo.com", password:"123", role:"user", plan:"pro",      avatar:"CL", joined:"2025-02-20", workspace:"Acme Corp"  },
+  { id:3, name:"María Torres",  email:"maria@demo.com",  password:"123", role:"user", plan:"free",     avatar:"MT", joined:"2025-03-10", workspace:"Acme Corp"  },
+  { id:4, name:"Juan Pérez",    email:"juan@demo.com",   password:"123", role:"user", plan:"business", avatar:"JP", joined:"2025-01-05", workspace:"GlobalTech" },
+  { id:5, name:"Ana Rodríguez", email:"ana@demo.com",    password:"123", role:"user", plan:"pro",      avatar:"AR", joined:"2025-04-01", workspace:"GlobalTech" },
+];
+
+const INIT_TUTS = [
+  { id:1, userId:2, title:"Excel para reportes financieros",    type:"video", lang:"Español",   dept:"Finanzas", views:342, completions:89,  status:"published", created:"2025-04-01", duration:"8 min",  quizOn:true,  certOn:true,  assignedTo:[3,5], favorite:true  },
+  { id:2, userId:3, title:"Onboarding nuevo empleado",          type:"text",  lang:"Español",   dept:"RRHH",     views:218, completions:156, status:"published", created:"2025-03-28", duration:"5 min",  quizOn:true,  certOn:true,  assignedTo:[],    favorite:false },
+  { id:3, userId:2, title:"SAP: Ingreso de órdenes de compra",  type:"voice", lang:"Inglés",    dept:"Compras",  views:97,  completions:0,   status:"draft",     created:"2025-04-10", duration:"12 min", quizOn:false, certOn:false, assignedTo:[3],   favorite:true  },
+  { id:4, userId:4, title:"PowerPoint: Plantillas corporativas", type:"video", lang:"Español",   dept:"Marketing",views:445, completions:203, status:"published", created:"2025-03-15", duration:"6 min",  quizOn:true,  certOn:true,  assignedTo:[5],   favorite:false },
+  { id:5, userId:4, title:"Word: Formato de contratos legales",  type:"text",  lang:"Portugués", dept:"Legal",    views:134, completions:67,  status:"published", created:"2025-04-05", duration:"4 min",  quizOn:false, certOn:false, assignedTo:[],    favorite:false },
+  { id:6, userId:2, title:"CRM: Registro de clientes nuevos",   type:"video", lang:"Español",   dept:"Ventas",   views:289, completions:112, status:"published", created:"2025-04-12", duration:"10 min", quizOn:true,  certOn:true,  assignedTo:[3,4,5],favorite:false},
+];
+
+const INIT_COMPLS = [
+  { userId:3, tutId:1, score:85, date:"2025-04-14", certified:true  },
+  { userId:5, tutId:1, score:92, date:"2025-04-15", certified:true  },
+  { userId:3, tutId:6, score:78, date:"2025-04-16", certified:true  },
+];
+
+const PLANS = {
+  free:     { label:"Free",     color:"#6B7A99", price:"$0",  tuts:3,   types:["text"],                 langs:1, seats:1  },
+  pro:      { label:"Pro",      color:"#4F6EF7", price:"$29", tuts:50,  types:["text","voice","video"],  langs:9, seats:5  },
+  business: { label:"Business", color:"#10B981", price:"$99", tuts:999, types:["text","voice","video"],  langs:9, seats:25 },
+};
+
+const LANGS   = ["Español","Inglés","Portugués","Francés","Alemán","Italiano","Chino","Japonés","Árabe"];
+const SOURCES = [{id:"url",icon:"🔗",label:"URL / Link"},{id:"image",icon:"🖼️",label:"Imagen"},{id:"qr",icon:"◼️",label:"Código QR"},{id:"barcode",icon:"▦",label:"Código de Barras"},{id:"upload",icon:"📁",label:"Archivo Office"},{id:"audio",icon:"🎤",label:"Grabación de reunión"}];
+const OUTPUTS = [{id:"text",icon:"📄",label:"Texto"},{id:"voice",icon:"🎙️",label:"Voz"},{id:"video",icon:"🎬",label:"Video"}];
+const TEMPLATES = [
+  {id:"t1",icon:"👋",title:"Onboarding de empleado",dept:"RRHH",desc:"Bienvenida e integración al equipo"},
+  {id:"t2",icon:"💼",title:"Procedimiento de ventas",dept:"Ventas",desc:"Flujo desde prospecto hasta cierre"},
+  {id:"t3",icon:"🔷",title:"Uso básico de SAP",dept:"TI",desc:"Navegación y operaciones esenciales"},
+  {id:"t4",icon:"📊",title:"Excel para reportes",dept:"Finanzas",desc:"Tablas dinámicas y dashboards"},
+  {id:"t5",icon:"🛡️",title:"Seguridad informática",dept:"TI",desc:"Buenas prácticas y protocolos"},
+  {id:"t6",icon:"📞",title:"Atención al cliente",dept:"Ventas",desc:"Llamadas, quejas y resolución"},
+  {id:"t7",icon:"📋",title:"Gestión de proyectos",dept:"Operaciones",desc:"Metodologías ágiles"},
+  {id:"t8",icon:"⚖️",title:"Contratos y documentación",dept:"Legal",desc:"Formatos legales y archivo"},
+  {id:"t9",icon:"🎯",title:"Evaluación de desempeño",dept:"RRHH",desc:"Feedback y objetivos anuales"},
+];
+
+async function ai(prompt, sys) {
+  try {
+    const r = await fetch("/api/chat", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({prompt, system: sys||""})
+    });
+    const d = await r.json();
+    return d.text || "";
+  } catch { return ""; }
+}
+
+/* ─── CSS ────────────────────────────────────────────────────── */
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07090F;--surf:#0C1018;--card:#111520;--bdr:#1C2438;
+  --acc:#5B7CFA;--v2:#8B5CF6;--grn:#10B981;--org:#F59E0B;--red:#EF4444;--cyn:#06B6D4;
+  --txt:#DDE4F5;--mut:#4A5A7A;--lt:#8A9AC0;
+  --grad:linear-gradient(135deg,#5B7CFA,#8B5CF6);
+}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:3px}
+
+/* AUTH */
+.auth-bg{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;overflow:hidden;position:relative}
+.orb{position:absolute;border-radius:50%;filter:blur(110px);pointer-events:none}
+.auth-box{background:rgba(12,16,24,.96);border:1px solid var(--bdr);border-radius:22px;width:100%;max-width:420px;padding:34px;position:relative;z-index:1}
+.auth-logo{display:flex;align-items:center;gap:10px;margin-bottom:26px;justify-content:center}
+.auth-mark{width:42px;height:42px;background:var(--grad);border-radius:13px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:19px}
+.auth-brand{font-family:'Syne',sans-serif;font-size:21px;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.auth-h{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin-bottom:4px}
+.auth-s{color:var(--mut);font-size:13px;margin-bottom:22px}
+.atabs{display:flex;background:var(--card);border:1px solid var(--bdr);border-radius:9px;padding:3px;margin-bottom:18px}
+.atab{flex:1;padding:7px;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;border:none;background:none;font-family:inherit;color:var(--mut);transition:.15s}
+.atab.on{background:var(--grad);color:#fff}
+.hints{background:rgba(91,124,250,.06);border:1px solid rgba(91,124,250,.15);border-radius:9px;padding:11px;margin-bottom:16px;font-size:11.5px;color:var(--lt);line-height:1.8}
+.hints strong{color:var(--acc)}
+.dvd{display:flex;align-items:center;gap:9px;margin:13px 0;color:var(--mut);font-size:11.5px}
+.dvd::before,.dvd::after{content:'';flex:1;height:1px;background:var(--bdr)}
+.err{color:var(--red);font-size:11.5px;font-weight:600;margin-bottom:10px}
+
+/* LAYOUT */
+.shell{display:flex;min-height:100vh}
+.sidebar{width:222px;background:var(--surf);border-right:1px solid var(--bdr);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100}
+.main{margin-left:222px;display:flex;flex-direction:column;min-height:100vh}
+.topbar{height:55px;background:rgba(12,16,24,.9);border-bottom:1px solid var(--bdr);display:flex;align-items:center;padding:0 18px;gap:10px;position:sticky;top:0;z-index:50;backdrop-filter:blur(12px)}
+.page{padding:20px;flex:1}
+
+.logo-row{padding:15px;display:flex;align-items:center;gap:9px;border-bottom:1px solid var(--bdr)}
+.logo-dot{width:31px;height:31px;background:var(--grad);border-radius:9px;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;flex-shrink:0}
+.logo-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.plan-pill{font-size:9px;font-weight:700;padding:2px 6px;border-radius:20px;margin-left:auto;text-transform:uppercase}
+
+nav{padding:8px 6px;flex:1;overflow-y:auto}
+.nsec{font-size:9px;font-weight:700;letter-spacing:1.5px;color:var(--mut);padding:9px 8px 4px;text-transform:uppercase}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:8px;cursor:pointer;font-size:12.5px;font-weight:500;color:var(--mut);transition:.14s;margin-bottom:1px;border:none;background:none;width:100%;text-align:left;font-family:inherit}
+.ni:hover{background:rgba(91,124,250,.08);color:var(--txt)}
+.ni.on{background:rgba(91,124,250,.14);color:var(--acc);font-weight:600}
+.nbadge{margin-left:auto;background:var(--acc);color:#fff;border-radius:20px;padding:1px 6px;font-size:9px;font-weight:700}
+.nbadge-red{background:var(--red)}
+.sb-foot{padding:10px;border-top:1px solid var(--bdr)}
+.ucard{display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;background:var(--card)}
+.ava{width:30px;height:30px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+
+.sbar{flex:1;max-width:340px;display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:6px 11px;color:var(--mut)}
+.sbar input{background:none;border:none;outline:none;color:var(--txt);font-size:12.5px;font-family:inherit;flex:1}
+.ibtn{width:31px;height:31px;border-radius:7px;background:var(--card);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--mut);transition:.14s;flex-shrink:0}
+.ibtn:hover{color:var(--txt);border-color:var(--acc)}
+
+/* STATS */
+.sg4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.sg3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}
+.sc{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:15px;border-top:2px solid var(--acc)}
+.sl{font-size:10px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+.sv{font-family:'Syne',sans-serif;font-size:26px;font-weight:800}
+.st{font-size:11px;font-weight:600;margin-top:3px;color:var(--grn)}
+
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--bdr);border-radius:12px}
+.ch{padding:13px 16px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
+.ct{font-weight:700;font-size:13px}
+.cb{padding:15px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+
+/* TABLE */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);padding:8px 12px;text-align:left;border-bottom:1px solid var(--bdr)}
+.tbl td{padding:9px 12px;border-bottom:1px solid rgba(28,36,56,.5);font-size:12px;vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr:hover td{background:rgba(91,124,250,.03)}
+
+/* BADGES */
+.bd{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:9.5px;font-weight:700}
+.bg{background:rgba(16,185,129,.12);color:var(--grn)}
+.bo{background:rgba(245,158,11,.12);color:var(--org)}
+.bb{background:rgba(91,124,250,.12);color:var(--acc)}
+.bp{background:rgba(139,92,246,.12);color:var(--v2)}
+.br{background:rgba(239,68,68,.12);color:var(--red)}
+.bc{background:rgba(6,182,212,.12);color:var(--cyn)}
+.bx{background:rgba(74,90,122,.12);color:var(--mut)}
+.tag{display:inline-flex;padding:1px 6px;border-radius:4px;font-size:9.5px;font-weight:600;background:rgba(91,124,250,.1);color:var(--acc);margin:1px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 14px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;transition:.14s;border:none;font-family:inherit}
+.btn-p{background:var(--grad);color:#fff}
+.btn-p:hover{opacity:.88;transform:translateY(-1px)}
+.btn-s{background:var(--card);color:var(--txt);border:1px solid var(--bdr)}
+.btn-s:hover{border-color:var(--acc);color:var(--acc)}
+.btn-d{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.btn-sm{padding:4px 11px;font-size:11.5px}
+.btn-full{width:100%;justify-content:center;padding:11px}
+
+/* FORMS */
+.fg{margin-bottom:13px}
+label{display:block;font-size:10.5px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px}
+input,select,textarea{width:100%;background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:8px 12px;color:var(--txt);font-size:13px;font-family:inherit;outline:none;transition:.14s}
+input:focus,select:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px rgba(91,124,250,.08)}
+select option{background:var(--card)}
+textarea{resize:vertical;min-height:60px}
+
+/* MODAL */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:14px;backdrop-filter:blur(6px)}
+.modal{background:var(--surf);border:1px solid var(--bdr);border-radius:18px;width:100%;max-width:620px;max-height:92vh;overflow-y:auto;animation:pop .2s ease}
+.modal-lg{max-width:760px}
+@keyframes pop{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.mh{padding:17px 20px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between}
+.mt{font-family:'Syne',sans-serif;font-size:16px;font-weight:800}
+.mb{padding:19px}
+.mf{padding:13px 20px;border-top:1px solid var(--bdr);display:flex;gap:8px;justify-content:flex-end}
+
+/* TUT CARDS */
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:13px}
+.tc{background:var(--card);border:1px solid var(--bdr);border-radius:12px;overflow:hidden;transition:.18s;cursor:pointer}
+.tc:hover{border-color:rgba(91,124,250,.4);transform:translateY(-2px);box-shadow:0 8px 26px rgba(0,0,0,.28)}
+.tthumb{height:90px;display:flex;align-items:center;justify-content:center;font-size:36px;position:relative}
+.tbody{padding:12px}
+.ttitle{font-weight:700;font-size:12.5px;margin-bottom:5px;line-height:1.4}
+.tmeta{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}
+.tstats{display:flex;justify-content:space-between;font-size:10px;color:var(--mut);margin-bottom:8px}
+.tact{display:flex;gap:5px;flex-wrap:wrap}
+
+/* SOURCE/OUTPUT GRID */
+.srcg{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.sri{background:var(--card);border:1.5px solid var(--bdr);border-radius:9px;padding:10px 7px;text-align:center;cursor:pointer;transition:.14s}
+.sri:hover,.sri.on{border-color:var(--acc);background:rgba(91,124,250,.06)}
+.sri.on{box-shadow:0 0 0 2px rgba(91,124,250,.14)}
+.outi{background:var(--card);border:1.5px solid var(--bdr);border-radius:9px;padding:10px;cursor:pointer;transition:.14s;display:flex;flex-direction:column;gap:3px}
+.outi:hover,.outi.on{border-color:var(--v2);background:rgba(139,92,246,.06)}
+.outi.on{box-shadow:0 0 0 2px rgba(139,92,246,.12)}
+.drop{border:2px dashed var(--bdr);border-radius:9px;padding:24px;text-align:center;color:var(--mut);transition:.14s;cursor:pointer}
+.drop:hover{border-color:var(--acc);color:var(--txt)}
+
+/* AI LOADER */
+.aild{display:flex;flex-direction:column;align-items:center;gap:12px;padding:32px;text-align:center}
+.aiorb{width:60px;height:60px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+.aistep{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;color:var(--mut);transition:.25s}
+.aistep.done{color:var(--grn)}.aistep.cur{color:var(--txt);font-weight:600}
+.pbar{height:4px;background:var(--bdr);border-radius:3px;overflow:hidden;margin:5px 0}
+.pfill{height:100%;border-radius:3px;background:var(--grad);transition:width .28s}
+
+/* STEP EDITOR */
+.step-box{background:var(--bg);border-left:3px solid var(--acc);border-radius:0 8px 8px 0;padding:10px 13px;margin-bottom:8px}
+.step-n{font-size:9px;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px}
+.step-ti{width:100%;background:none;border:none;color:var(--txt);font-family:inherit;font-size:13px;font-weight:700;outline:none}
+.step-bo{width:100%;background:none;border:none;color:var(--lt);font-family:inherit;font-size:12px;line-height:1.7;outline:none;resize:none;min-height:48px}
+
+/* QUIZ */
+.qq{background:var(--bg);border:1px solid var(--bdr);border-radius:9px;padding:13px;margin-bottom:9px}
+.qopt{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:7px;border:1.5px solid var(--bdr);margin-top:7px;cursor:pointer;transition:.14s;font-size:12.5px}
+.qopt:hover{border-color:var(--acc);background:rgba(91,124,250,.05)}
+.qopt.sel{border-color:var(--acc);background:rgba(91,124,250,.1);color:var(--acc);font-weight:600}
+.qopt.ok{border-color:var(--grn);background:rgba(16,185,129,.1);color:var(--grn)}
+.qopt.ng{border-color:var(--red);background:rgba(239,68,68,.1);color:var(--red)}
+
+/* CERT */
+.cert{background:var(--bg);border:1.5px solid;border-color:var(--acc);border-radius:14px;padding:32px;text-align:center;position:relative;overflow:hidden}
+.cert::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(45deg,rgba(91,124,250,.015) 0,rgba(91,124,250,.015) 1px,transparent 1px,transparent 12px);pointer-events:none}
+.cert-lbl{font-family:'Syne',sans-serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--mut);margin-bottom:8px}
+.cert-name{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin:7px 0}
+.cert-seal{width:64px;height:64px;background:var(--grad);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 12px}
+
+/* CHAT */
+.chat-wrap{display:flex;flex-direction:column;height:370px}
+.chat-msgs{flex:1;overflow-y:auto;padding:13px;display:flex;flex-direction:column;gap:9px}
+.chat-msg{max-width:78%;padding:9px 13px;border-radius:11px;font-size:12.5px;line-height:1.6}
+.chat-msg.user{background:var(--grad);color:#fff;align-self:flex-end;border-radius:11px 11px 3px 11px}
+.chat-msg.bot{background:rgba(28,36,56,.8);color:var(--txt);align-self:flex-start;border-radius:11px 11px 11px 3px}
+.chat-in{display:flex;gap:7px;padding:11px 13px;border-top:1px solid var(--bdr)}
+.chat-in input{flex:1;background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:8px 12px;color:var(--txt);font-family:inherit;font-size:12.5px;outline:none}
+.chat-in input:focus{border-color:var(--acc)}
+
+/* BAR CHART */
+.cbars{display:flex;align-items:flex-end;gap:5px;height:78px}
+.cbar{flex:1;border-radius:4px 4px 0 0;background:var(--grad);opacity:.55;transition:.2s;cursor:pointer;min-height:3px}
+.cbar:hover{opacity:1}
+
+/* PLAN CARDS */
+.plc{background:var(--card);border:1.5px solid var(--bdr);border-radius:12px;padding:18px;transition:.16s}
+.plc.ft{border-color:var(--acc);background:rgba(91,124,250,.05)}
+.plprice{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin:7px 0}
+.plf{font-size:11.5px;color:var(--lt);margin:3px 0;display:flex;align-items:center;gap:5px}
+
+/* TOGGLE */
+.tog{width:33px;height:18px;border-radius:10px;position:relative;transition:.16s;flex-shrink:0;cursor:pointer}
+.tog.on{background:var(--grn)}.tog.off{background:var(--bdr)}
+.tog::after{content:'';position:absolute;width:12px;height:12px;background:#fff;border-radius:50%;top:3px;transition:.16s}
+.tog.on::after{left:17px}.tog.off::after{left:3px}
+.togrow{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--lt);cursor:pointer;padding:4px 0}
+
+/* TOAST */
+.toast{position:fixed;bottom:18px;right:18px;padding:10px 16px;border-radius:10px;font-weight:600;font-size:12.5px;z-index:999;animation:pop .22s ease;display:flex;align-items:center;gap:7px;border:1px solid}
+.t-ok{background:rgba(16,185,129,.13);border-color:rgba(16,185,129,.28);color:var(--grn)}
+.t-info{background:rgba(91,124,250,.13);border-color:rgba(91,124,250,.28);color:var(--acc)}
+
+/* MISC */
+.ph{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;gap:12px;flex-wrap:wrap}
+.ptl{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;line-height:1.1}
+.psu{color:var(--mut);font-size:12px;margin-top:3px}
+.empty{text-align:center;padding:42px;color:var(--mut)}
+.tabs{display:flex;gap:2px;background:var(--card);border:1px solid var(--bdr);border-radius:8px;padding:3px}
+.tab{padding:5px 12px;border-radius:6px;font-size:11.5px;font-weight:600;cursor:pointer;color:var(--mut);border:none;background:none;font-family:inherit;transition:.14s;white-space:nowrap}
+.tab.on{background:var(--grad);color:#fff}
+.pbar-wrap{height:4px;background:var(--bdr);border-radius:3px;overflow:hidden;margin:5px 0}
+.pbar-fill{height:100%;border-radius:3px;background:var(--grad);transition:width .3s}
+`;
+
+/* SVG ICONS */
+const ICONS = {
+  dash:"M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z",
+  tuts:"M12 3L1 9l11 6 9-4.91V17h2V9L12 3zM5 13.18v4L12 21l7-3.82v-4L12 17l-7-3.82z",
+  users:"M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z",
+  chart:"M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z",
+  cog:"M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.57 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z",
+  shield:"M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z",
+  plus:"M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z",
+  check:"M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z",
+  close:"M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z",
+  dl:"M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z",
+  share:"M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z",
+  star:"M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z",
+  edit:"M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z",
+  trash:"M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z",
+  logout:"M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z",
+  search:"M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z",
+  play:"M8 5v14l11-7z",
+  crown:"M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm0 3h14v1H5z",
+  money:"M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z",
+  template:"M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z",
+  quiz:"M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z",
+  cert:"M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z",
+  assign:"M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z",
+  chat:"M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z",
+  bell:"M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z",
+};
+const Ic = ({ n, s=14 }) => <svg width={s} height={s} viewBox="0 0 24 24" fill="currentColor"><path d={ICONS[n] || ICONS.star}/></svg>;
+
+/* ─── HELPERS ────────────────────────────────────────────────── */
+function TBadge({ type }) {
+  const m = { text:["📄","bb","Texto"], voice:["🎙️","bp","Voz"], video:["🎬","bo","Video"] };
+  const [ic, cl, lb] = m[type] || m.text;
+  return <span className={`bd ${cl}`}>{ic} {lb}</span>;
+}
+function SBadge({ status }) {
+  return <span className={`bd ${status === "published" ? "bg" : "bo"}`}>{status === "published" ? "✓ Publicado" : "✎ Borrador"}</span>;
+}
+function parseSteps(txt) {
+  const steps = [];
+  const rx = /PASO\s*(\d+)[:\-]\s*([^\n]+)\n([\s\S]*?)(?=PASO\s*\d|TIEMPO|$)/gi;
+  let m;
+  while ((m = rx.exec(txt || "")) !== null) {
+    steps.push({ num: m[1], title: m[2].trim(), body: m[3].replace(/\n+$/, "").trim() });
+  }
+  return steps;
+}
+function fallback(topic, dept) {
+  return `PASO 1: Preparación inicial\nVerificá tus credenciales y accedé al sistema correspondiente.\n\nPASO 2: Acceso al módulo\nAbrí la sección requerida desde el menú principal.\n\nPASO 3: Ingreso de datos\nCompletá todos los campos requeridos con la información correcta.\n\nPASO 4: Procesamiento\nEjecutá la acción principal sin saltear ningún paso.\n\nPASO 5: Verificación y cierre\nConfirmá el resultado y guardá según el protocolo de ${dept}.\n\nTIEMPO: 8 minutos`;
+}
+
+/* ─── MAIN APP ───────────────────────────────────────────────── */
+export default function App() {
+  const [sess, setSess]     = useState(null);
+  const [users, setUsers]   = useState(INIT_USERS);
+  const [tuts, setTuts]     = useState(INIT_TUTS);
+  const [compls, setCompls] = useState(INIT_COMPLS);
+  const [toasts, setToasts] = useState([]);
+
+  const toast = (msg, type = "ok") => {
+    const id = Date.now();
+    setToasts(p => [...p, { id, msg, type }]);
+    setTimeout(() => setToasts(p => p.filter(t => t.id !== id)), 2800);
+  };
+
+  const ctx = { users, setUsers, tuts, setTuts, compls, setCompls, toast };
+
+  if (!sess) {
+    return (
+      <>
+        <style>{CSS}</style>
+        <Auth
+          users={users}
+          onLogin={u => setSess({ user: u, role: u.role })}
+          onRegister={d => {
+            const nu = { id: Date.now(), ...d, role:"user", plan:"free", avatar:d.name.slice(0,2).toUpperCase(), joined:new Date().toISOString().slice(0,10), workspace:"" };
+            setUsers(p => [...p, nu]);
+            setSess({ user: nu, role: "user" });
+          }}
+        />
+        <Toasts toasts={toasts}/>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <style>{CSS}</style>
+      {sess.role === "owner"
+        ? <AdminApp {...ctx} logout={() => setSess(null)}/>
+        : <UserApp  {...ctx} sess={sess} logout={() => setSess(null)}/>
+      }
+      <Toasts toasts={toasts}/>
+    </>
+  );
+}
+
+function Toasts({ toasts }) {
+  return (
+    <div style={{ position:"fixed", bottom:18, right:18, zIndex:1000, display:"flex", flexDirection:"column", gap:7 }}>
+      {toasts.map(t => (
+        <div key={t.id} className={`toast t-${t.type}`}>✓ {t.msg}</div>
+      ))}
+    </div>
+  );
+}
+
+/* ─── AUTH ───────────────────────────────────────────────────── */
+function Auth({ users, onLogin, onRegister }) {
+  const [tab, setTab]   = useState("login");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [pass, setPass]   = useState("");
+  const [err, setErr]     = useState("");
+
+  const doLogin = () => {
+    if (email === OWNER.email && pass === OWNER.password) { onLogin(OWNER); return; }
+    const u = users.find(u => u.email === email && u.password === pass);
+    if (u) { onLogin(u); return; }
+    setErr("Credenciales incorrectas");
+  };
+
+  const doReg = () => {
+    if (!name || !email || !pass) { setErr("Completá todos los campos"); return; }
+    if (users.find(u => u.email === email)) { setErr("Email ya registrado"); return; }
+    onRegister({ name, email, password: pass });
+  };
+
+  return (
+    <div className="auth-bg">
+      <div className="orb" style={{ width:500, height:500, background:"#5B7CFA", top:-150, right:-80, opacity:.07 }}/>
+      <div className="orb" style={{ width:380, height:380, background:"#8B5CF6", bottom:-100, left:-80, opacity:.07 }}/>
+      <div className="auth-box">
+        <div className="auth-logo">
+          <div className="auth-mark">T</div>
+          <span className="auth-brand">TutorAI</span>
+        </div>
+        <div className="auth-h">{tab === "login" ? "Bienvenido 👋" : "Crear cuenta gratis"}</div>
+        <div className="auth-s">{tab === "login" ? "Entrá a tu plataforma de capacitación" : "Generá tutoriales con IA desde hoy"}</div>
+        <div className="atabs">
+          <button className={`atab${tab === "login" ? " on" : ""}`} onClick={() => { setTab("login"); setErr(""); }}>Iniciar Sesión</button>
+          <button className={`atab${tab === "register" ? " on" : ""}`} onClick={() => { setTab("register"); setErr(""); }}>Registrarse</button>
+        </div>
+        {tab === "login" && (
+          <div className="hints">
+            🔑 <strong>Admin:</strong> admin@tutorai.com / admin123<br/>
+            👤 <strong>Pro:</strong> carlos@demo.com / 123 &nbsp;·&nbsp; <strong>Business:</strong> juan@demo.com / 123<br/>
+            👤 <strong>Free:</strong> maria@demo.com / 123
+          </div>
+        )}
+        {tab === "register" && (
+          <div className="fg"><label>Nombre completo</label><input placeholder="Tu nombre..." value={name} onChange={e => setName(e.target.value)}/></div>
+        )}
+        <div className="fg"><label>Email</label><input type="email" placeholder="tu@empresa.com" value={email} onChange={e => setEmail(e.target.value)}/></div>
+        <div className="fg"><label>Contraseña</label><input type="password" placeholder="••••••••" value={pass} onChange={e => setPass(e.target.value)}/></div>
+        {err && <div className="err">⚠ {err}</div>}
+        <button className="btn btn-p btn-full" onClick={tab === "login" ? doLogin : doReg}>
+          {tab === "login" ? "Entrar a TutorAI →" : "Crear cuenta gratis →"}
+        </button>
+        <div className="dvd">o continuá con</div>
+        <div style={{ display:"flex", gap:8 }}>
+          <button className="btn btn-s btn-full">🔵 Google</button>
+          <button className="btn btn-s btn-full">💼 Microsoft</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── SIDEBAR ────────────────────────────────────────────────── */
+function Sidebar({ user, groups, page, setPage, logout, planLabel, planColor }) {
+  return (
+    <div className="sidebar">
+      <div className="logo-row">
+        <div className="logo-dot">T</div>
+        <span className="logo-name">TutorAI</span>
+        <span className="plan-pill" style={{ background:`${planColor}22`, color:planColor }}>{planLabel}</span>
+      </div>
+      <nav>
+        {groups.map(g => (
+          <div key={g.g}>
+            <div className="nsec">{g.g}</div>
+            {g.items.map(it => (
+              <button key={it.id} className={`ni${page === it.id ? " on" : ""}`} onClick={() => setPage(it.id)}>
+                <Ic n={it.icon} s={14}/>{it.label}
+                {it.badge != null && <span className={`nbadge${it.red ? " nbadge-red" : ""}`}>{it.badge}</span>}
+              </button>
+            ))}
+          </div>
+        ))}
+      </nav>
+      <div className="sb-foot">
+        <div className="ucard">
+          <div className="ava">{user.avatar}</div>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:11.5, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{user.name}</div>
+            <div style={{ fontSize:10, color:"var(--mut)" }}>{user.role === "owner" ? "Super Admin" : planLabel}</div>
+          </div>
+          <div className="ibtn" style={{ border:"none", background:"none" }} onClick={logout}><Ic n="logout" s={13}/></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── ADMIN APP ──────────────────────────────────────────────── */
+function AdminApp({ users, setUsers, tuts, setTuts, compls, toast, logout }) {
+  const [page, setPage]     = useState("dash");
+  const [showNew, setShowNew] = useState(false);
+  const [srch, setSrch]     = useState("");
+
+  const groups = [
+    { g:"Principal", items:[
+      { id:"dash",     icon:"dash",   label:"Dashboard" },
+      { id:"tuts",     icon:"tuts",   label:"Tutoriales",   badge:tuts.length },
+    ]},
+    { g:"Gestión", items:[
+      { id:"users",    icon:"users",  label:"Usuarios",     badge:users.length },
+      { id:"analytics",icon:"chart",  label:"Analíticas" },
+      { id:"money",    icon:"money",  label:"Ingresos" },
+    ]},
+    { g:"Sistema", items:[
+      { id:"security", icon:"shield", label:"Seguridad" },
+      { id:"settings", icon:"cog",    label:"Configuración" },
+    ]},
+  ];
+
+  return (
+    <div className="shell">
+      <Sidebar user={OWNER} groups={groups} page={page} setPage={setPage} logout={logout} planLabel="OWNER" planColor="#EF4444"/>
+      <div className="main">
+        <div className="topbar">
+          <div className="sbar"><Ic n="search" s={13}/><input placeholder="Buscar..." value={srch} onChange={e => setSrch(e.target.value)}/></div>
+          <div style={{ marginLeft:"auto", display:"flex", gap:8, alignItems:"center" }}>
+            <div className="ibtn"><Ic n="bell" s={14}/></div>
+            <span className="bd br">👑 OWNER</span>
+          </div>
+        </div>
+        <div className="page">
+          {page === "dash"      && <ADash tuts={tuts} users={users} compls={compls} setPage={setPage} onNew={() => setShowNew(true)}/>}
+          {page === "tuts"      && <ATuts tuts={tuts} setTuts={setTuts} users={users} srch={srch} onNew={() => setShowNew(true)} toast={toast}/>}
+          {page === "users"     && <AUsers users={users} setUsers={setUsers} tuts={tuts} toast={toast}/>}
+          {page === "analytics" && <AAnalytics tuts={tuts} users={users} compls={compls}/>}
+          {page === "money"     && <AMoney users={users}/>}
+          {page === "security"  && <ASecurity/>}
+          {page === "settings"  && <ASettings/>}
+        </div>
+      </div>
+      {showNew && (
+        <NewTutModal
+          isAdmin
+          allUsers={users}
+          onClose={() => setShowNew(false)}
+          onSave={t => { setTuts(p => [{ ...t, userId:0 }, ...p]); setShowNew(false); toast("Tutorial creado"); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ADash({ tuts, users, compls, setPage, onNew }) {
+  const tv  = tuts.reduce((a, t) => a + t.views, 0);
+  const mrr = users.reduce((a, u) => a + (u.plan === "pro" ? 29 : u.plan === "business" ? 99 : 0), 0);
+  const act = [
+    { t:"María Torres completó 'Excel' — Score 85%", tm:"5 min" },
+    { t:"Nuevo usuario: Roberto Silva (Free)", tm:"18 min" },
+    { t:"Carlos asignó tutorial a 3 miembros", tm:"45 min" },
+    { t:"Tutorial 'Onboarding' alcanzó 200 completaciones", tm:"2h" },
+  ];
+  return (
+    <div>
+      <div className="ph">
+        <div><div className="ptl">Panel de Control 👑</div><div className="psu">Vista exclusiva del dueño</div></div>
+        <button className="btn btn-p btn-sm" onClick={onNew}><Ic n="plus" s={12}/>Nuevo Tutorial</button>
+      </div>
+      <div className="sg4">
+        {[["Tutoriales", tuts.length, "#5B7CFA"], ["Usuarios", users.length, "#10B981"], ["Vistas", tv, "#8B5CF6"], ["MRR", "$"+mrr, "#F59E0B"]].map(([l, v, c]) => (
+          <div key={l} className="sc" style={{ borderTopColor:c }}>
+            <div className="sl">{l}</div>
+            <div className="sv" style={{ color:c }}>{v}</div>
+          </div>
+        ))}
+      </div>
+      <div className="g2">
+        <div className="card">
+          <div className="ch"><div className="ct">Tutoriales recientes</div><button className="btn btn-s btn-sm" onClick={() => setPage("tuts")}>Ver todos</button></div>
+          <table className="tbl"><thead><tr><th>Título</th><th>Tipo</th><th>Vistas</th><th>Estado</th></tr></thead><tbody>
+            {tuts.slice(0, 6).map(t => (
+              <tr key={t.id}>
+                <td style={{ maxWidth:150, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", fontWeight:600 }}>{t.title}</td>
+                <td><TBadge type={t.type}/></td>
+                <td style={{ fontWeight:700, color:"var(--acc)" }}>{t.views}</td>
+                <td><SBadge status={t.status}/></td>
+              </tr>
+            ))}
+          </tbody></table>
+        </div>
+        <div className="card">
+          <div className="ch"><div className="ct">Actividad</div></div>
+          <div className="cb">
+            {act.map((a, i) => (
+              <div key={i} style={{ display:"flex", gap:9, padding:"7px 0", borderBottom:"1px solid rgba(28,36,56,.5)" }}>
+                <div style={{ width:7, height:7, borderRadius:"50%", background:"var(--acc)", marginTop:5, flexShrink:0 }}/>
+                <div><div style={{ fontSize:12 }}>{a.t}</div><div style={{ fontSize:10, color:"var(--mut)", marginTop:1 }}>hace {a.tm}</div></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ATuts({ tuts, setTuts, users, srch, onNew, toast }) {
+  const [ft, setFt] = useState("all");
+  const gn = id => users.find(x => x.id === id)?.name || "Sistema";
+  const filtered = tuts.filter(t => (!srch || t.title.toLowerCase().includes(srch.toLowerCase())) && (ft === "all" || t.type === ft));
+  return (
+    <div>
+      <div className="ph">
+        <div><div className="ptl">Todos los Tutoriales</div><div className="psu">{tuts.length} en la plataforma</div></div>
+        <button className="btn btn-p btn-sm" onClick={onNew}><Ic n="plus" s={12}/>Nuevo</button>
+      </div>
+      <div style={{ marginBottom:14 }}>
+        <div className="tabs">
+          {[["all","Todos"],["text","Texto"],["voice","Voz"],["video","Video"]].map(([v,l]) => (
+            <button key={v} className={`tab${ft === v ? " on" : ""}`} onClick={() => setFt(v)}>{l}</button>
+          ))}
+        </div>
+      </div>
+      <div className="card">
+        <table className="tbl"><thead><tr><th>Tutorial</th><th>Creador</th><th>Tipo</th><th>Idioma</th><th>Vistas</th><th>Quiz</th><th>Cert</th><th>Estado</th><th></th></tr></thead><tbody>
+          {filtered.map(t => (
+            <tr key={t.id}>
+              <td>
+                <div style={{ fontWeight:600, fontSize:11.5, maxWidth:155, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{t.title}</div>
+                <div style={{ fontSize:9.5, color:"var(--mut)" }}>{t.created} · {t.duration}</div>
+              </td>
+              <td style={{ fontSize:11 }}>{gn(t.userId)}</td>
+              <td><TBadge type={t.type}/></td>
+              <td><span className="tag">{t.lang}</span></td>
+              <td style={{ fontWeight:700, color:"var(--acc)" }}>{t.views}</td>
+              <td><span className={`bd ${t.quizOn ? "bg" : "bx"}`}>{t.quizOn ? "✓" : "—"}</span></td>
+              <td><span className={`bd ${t.certOn ? "bp" : "bx"}`}>{t.certOn ? "✓" : "—"}</span></td>
+              <td><SBadge status={t.status}/></td>
+              <td>
+                <button className="ibtn" style={{ width:24, height:24 }} onClick={() => { setTuts(p => p.filter(x => x.id !== t.id)); toast("Eliminado"); }}>
+                  <Ic n="trash" s={10}/>
+                </button>
+              </td>
+            </tr>
+          ))}
+          {!filtered.length && <tr><td colSpan={9}><div className="empty">Sin resultados</div></td></tr>}
+        </tbody></table>
+      </div>
+    </div>
+  );
+}
+
+function AUsers({ users, setUsers, tuts, toast }) {
+  return (
+    <div>
+      <div className="ph"><div><div className="ptl">Usuarios</div><div className="psu">{users.length} registrados</div></div></div>
+      <div className="sg3">
+        {[["Free", "#6B7A99"], ["Pro", "#4F6EF7"], ["Business", "#10B981"]].map(([k, c]) => (
+          <div key={k} className="sc" style={{ borderTopColor:c }}>
+            <div className="sl">{k}</div>
+            <div className="sv" style={{ color:c }}>{users.filter(u => u.plan === k.toLowerCase()).length}</div>
+          </div>
+        ))}
+      </div>
+      <div className="card">
+        <table className="tbl"><thead><tr><th>Usuario</th><th>Workspace</th><th>Plan</th><th>Tutoriales</th><th>Ingresó</th><th></th></tr></thead><tbody>
+          {users.map(u => (
+            <tr key={u.id}>
+              <td>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <div className="ava" style={{ width:28, height:28, fontSize:10 }}>{u.avatar}</div>
+                  <div>
+                    <div style={{ fontWeight:600, fontSize:11.5 }}>{u.name}</div>
+                    <div style={{ fontSize:10, color:"var(--mut)" }}>{u.email}</div>
+                  </div>
+                </div>
+              </td>
+              <td><span className="tag">{u.workspace || "—"}</span></td>
+              <td>
+                <select
+                  style={{ background:"transparent", border:"none", color: u.plan==="free"?"var(--mut)":u.plan==="pro"?"var(--acc)":"var(--grn)", fontWeight:700, fontSize:10, padding:0, cursor:"pointer" }}
+                  value={u.plan}
+                  onChange={e => { setUsers(p => p.map(x => x.id === u.id ? {...x, plan:e.target.value} : x)); toast("Plan actualizado"); }}
+                >
+                  <option value="free">Free</option>
+                  <option value="pro">Pro</option>
+                  <option value="business">Business</option>
+                </select>
+              </td>
+              <td style={{ fontWeight:700, color:"var(--acc)" }}>{tuts.filter(t => t.userId === u.id).length}</td>
+              <td style={{ fontSize:10, color:"var(--mut)" }}>{u.joined}</td>
+              <td>
+                <button className="ibtn" style={{ width:24, height:24 }} onClick={() => { setUsers(p => p.filter(x => x.id !== u.id)); toast("Usuario eliminado"); }}>
+                  <Ic n="trash" s={10}/>
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody></table>
+      </div>
+    </div>
+  );
+}
+
+function AAnalytics({ tuts, users, compls }) {
+  const bars = [38,55,42,70,61,48,85,72,55,90,78,95];
+  const months = ["E","F","M","A","M","J","J","A","S","O","N","D"];
+  const top = [...tuts].sort((a,b) => b.views - a.views).slice(0, 5);
+  const avg = compls.length ? Math.round(compls.reduce((a,c)=>a+c.score,0)/compls.length) : 0;
+  return (
+    <div>
+      <div className="ph"><div><div className="ptl">Analíticas</div><div className="psu">Métricas globales</div></div></div>
+      <div className="sg4">
+        {[["Completaciones", compls.length], ["Score promedio", avg+"%"], ["Certificados", compls.filter(c=>c.certified).length], ["Con quiz", tuts.filter(t=>t.quizOn).length+"/"+tuts.length]].map(([l,v]) => (
+          <div key={l} className="sc"><div className="sl">{l}</div><div className="sv" style={{ fontSize:22 }}>{v}</div></div>
+        ))}
+      </div>
+      <div className="g2">
+        <div className="card">
+          <div className="ch"><div className="ct">Vistas por mes</div></div>
+          <div className="cb">
+            <div className="cbars">{bars.map((h,i) => <div key={i} className="cbar" style={{ height:`${h}%` }}/>)}</div>
+            <div style={{ display:"flex", justifyContent:"space-between", marginTop:5, fontSize:9, color:"var(--mut)" }}>{months.map(m => <span key={m}>{m}</span>)}</div>
+          </div>
+        </div>
+        <div className="card">
+          <div className="ch"><div className="ct">Por tipo</div></div>
+          <div className="cb">
+            {[["🎬 Video",55,"#8B5CF6"],["📄 Texto",28,"#5B7CFA"],["🎙️ Voz",17,"#10B981"]].map(([l,p,c]) => (
+              <div key={l} style={{ marginBottom:12 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:4 }}><span>{l}</span><span style={{ fontWeight:700, color:c }}>{p}%</span></div>
+                <div className="pbar-wrap"><div className="pbar-fill" style={{ width:`${p}%`, background:c }}/></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div className="card" style={{ marginTop:15 }}>
+        <div className="ch"><div className="ct">Top 5 tutoriales</div></div>
+        <table className="tbl"><thead><tr><th>#</th><th>Título</th><th>Vistas</th><th>Completaciones</th><th>Tasa</th></tr></thead><tbody>
+          {top.map((t,i) => (
+            <tr key={t.id}>
+              <td style={{ fontWeight:800, fontSize:15, color:"var(--mut)" }}>#{i+1}</td>
+              <td style={{ fontWeight:600, fontSize:11.5, maxWidth:180, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{t.title}</td>
+              <td style={{ fontWeight:700, color:"var(--acc)" }}>{t.views}</td>
+              <td style={{ fontWeight:700, color:"var(--grn)" }}>{t.completions}</td>
+              <td style={{ fontWeight:700, color:"var(--org)" }}>{t.views ? Math.round((t.completions/t.views)*100) : 0}%</td>
+            </tr>
+          ))}
+        </tbody></table>
+      </div>
+    </div>
+  );
+}
+
+function AMoney({ users }) {
+  const mrr = users.reduce((a,u) => a + (u.plan==="pro"?29:u.plan==="business"?99:0), 0);
+  return (
+    <div>
+      <div className="ph"><div><div className="ptl">Ingresos & Planes</div></div></div>
+      <div className="sg4">
+        {[["MRR","$"+mrr+"/mes","#10B981"],["ARR","$"+(mrr*12)+"/año","#5B7CFA"],["Usuarios pagos",users.filter(u=>u.plan!=="free").length,"#8B5CF6"],["Conversión",Math.round((users.filter(u=>u.plan!=="free").length/users.length)*100)+"%","#F59E0B"]].map(([l,v,c]) => (
+          <div key={l} className="sc" style={{ borderTopColor:c }}><div className="sl">{l}</div><div className="sv" style={{ color:c, fontSize:18 }}>{v}</div></div>
+        ))}
+      </div>
+      <div className="g3">
+        {Object.entries(PLANS).map(([k,pl]) => (
+          <div key={k} className={`plc${k==="pro"?" ft":""}`}>
+            {k==="pro" && <div className="bd bb" style={{ marginBottom:7 }}>⭐ Popular</div>}
+            <div style={{ fontSize:20, marginBottom:5 }}>{k==="free"?"🆓":k==="pro"?"💼":"🏢"}</div>
+            <div style={{ fontWeight:800, fontSize:14, fontFamily:"'Syne',sans-serif" }}>{pl.label}</div>
+            <div className="plprice" style={{ color:pl.color }}>{pl.price}<span style={{ fontSize:11, fontWeight:400, color:"var(--mut)" }}>/mes</span></div>
+            {[`${pl.tuts===999?"Ilimitados":pl.tuts} tutoriales`, `${pl.langs} idioma${pl.langs>1?"s":""}`, `${pl.seats} seat${pl.seats>1?"s":""}`].map((f,i) => (
+              <div key={i} className="plf"><span style={{ color:"var(--grn)" }}>✓</span>{f}</div>
+            ))}
+            <div style={{ marginTop:10, fontSize:11, color:"var(--mut)" }}>{users.filter(u=>u.plan===k).length} usuarios</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ASecurity() {
+  const items = [["JWT Auth","Tokens 24h",true],["AES-256","Datos encriptados",true],["HTTPS TLS 1.3","Tráfico encriptado",true],["2FA","Doble factor",false],["RBAC","Control por roles",true],["Audit Log","Registro de acciones",true],["Rate Limit","Anti-brute force",true],["GDPR/LGPD","Compliance",false]];
+  const logs  = [{a:"Login",u:"admin@tutorai.com",t:"Hoy 09:14",ok:true},{a:"Registro",u:"nuevo@email.com",t:"Hoy 08:40",ok:true},{a:"Login fallido",u:"hack@test.com",t:"Hoy 07:30",ok:false}];
+  return (
+    <div>
+      <div className="ph"><div><div className="ptl">Seguridad</div></div><span className="bd bg">🔒 Seguro</span></div>
+      <div className="g2">
+        <div>
+          {items.map(([l,d,ok],i) => (
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:11, background:"var(--card)", border:"1px solid var(--bdr)", borderRadius:9, marginBottom:7 }}>
+              <div style={{ width:8, height:8, borderRadius:"50%", background:ok?"var(--grn)":"var(--org)", flexShrink:0 }}/>
+              <div style={{ flex:1 }}><div style={{ fontWeight:600, fontSize:12 }}>{l}</div><div style={{ fontSize:10, color:"var(--mut)" }}>{d}</div></div>
+              <span className={`bd ${ok?"bg":"bo"}`}>{ok?"Activo":"Opcional"}</span>
+            </div>
+          ))}
+        </div>
+        <div className="card">
+          <div className="ch"><div className="ct">Audit Log</div></div>
+          <div className="cb">
+            {logs.map((l,i) => (
+              <div key={i} style={{ display:"flex", gap:9, padding:"8px 0", borderBottom:"1px solid rgba(28,36,56,.5)" }}>
+                <div style={{ width:7, height:7, borderRadius:"50%", background:l.ok?"var(--grn)":"var(--red)", marginTop:5, flexShrink:0 }}/>
+                <div><div style={{ fontSize:12, fontWeight:600 }}>{l.a} — {l.u}</div><div style={{ fontSize:10, color:"var(--mut)" }}>{l.t}</div></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ASettings() {
+  return (
+    <div>
+      <div className="ph"><div><div className="ptl">Configuración</div></div></div>
+      <div className="g2">
+        <div className="card">
+          <div className="ch"><div className="ct">Empresa</div></div>
+          <div className="cb">
+            <div className="fg"><label>Nombre</label><input defaultValue="TutorAI"/></div>
+            <div className="fg"><label>Email soporte</label><input defaultValue="soporte@tutorai.com"/></div>
+            <div className="fg"><label>Idioma base</label><select>{LANGS.map(l => <option key={l}>{l}</option>)}</select></div>
+            <button className="btn btn-p btn-sm">Guardar</button>
+          </div>
+        </div>
+        <div className="card">
+          <div className="ch"><div className="ct">Integraciones</div></div>
+          <div className="cb">
+            {[["📊 Office 365",true],["🔵 Google Workspace",false],["💬 Slack",true],["🔷 SAP",false],["☁️ Salesforce",false],["📹 Zoom / Teams",false]].map(([n,on],i) => (
+              <div key={i} style={{ display:"flex", alignItems:"center", gap:9, padding:"8px 0", borderBottom:"1px solid var(--bdr)" }}>
+                <span style={{ flex:1, fontSize:12 }}>{n}</span>
+                <div className={`tog ${on?"on":"off"}`}/>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── USER APP ───────────────────────────────────────────────── */
+function UserApp({ sess, users, tuts, setTuts, compls, setCompls, toast, logout }) {
+  const [page, setPage]       = useState("home");
+  const [showNew, setShowNew] = useState(false);
+  const [srch, setSrch]       = useState("");
+  const [modal, setModal]     = useState(null); // {tut, mode: "view"|"quiz"|"cert"|"chat"}
+
+  const u        = sess.user;
+  const plan     = PLANS[u.plan] || PLANS.free;
+  const pc       = { free:"#6B7A99", pro:"#4F6EF7", business:"#10B981" };
+  const myTuts   = tuts.filter(t => t.userId === u.id);
+  const assigned = tuts.filter(t => t.assignedTo?.includes(u.id));
+  const favTuts  = myTuts.filter(t => t.favorite);
+  const myCompls = compls.filter(c => c.userId === u.id);
+
+  const toggleFav = id => setTuts(p => p.map(t => t.id===id ? {...t,favorite:!t.favorite} : t));
+  const delTut    = id => { setTuts(p => p.filter(t => t.id!==id)); toast("Tutorial eliminado"); };
+
+  const openModal = (tut, mode="view") => setModal({ tut, mode });
+  const closeModal = () => setModal(null);
+
+  const pendingCount = assigned.filter(t => !myCompls.find(c => c.tutId===t.id)).length;
+  const certCount    = myCompls.filter(c => c.certified).length;
+
+  const groups = [
+    { g:"Mi Espacio", items:[
+      { id:"home",      icon:"dash",     label:"Inicio" },
+      { id:"my",        icon:"tuts",     label:"Mis Tutoriales", badge:myTuts.length },
+      { id:"assigned",  icon:"assign",   label:"Asignados",      badge:pendingCount||undefined, red:pendingCount>0 },
+      { id:"favs",      icon:"star",     label:"Favoritos",      badge:favTuts.length||undefined },
+    ]},
+    { g:"Crear", items:[
+      { id:"templates", icon:"template", label:"Templates" },
+    ]},
+    { g:"Explorar", items:[
+      { id:"explore",   icon:"search",   label:"Explorar públicos" },
+    ]},
+    { g:"Cuenta", items:[
+      { id:"certs",     icon:"cert",     label:"Mis Certificados", badge:certCount||undefined },
+      { id:"plan",      icon:"crown",    label:"Mi Plan" },
+    ]},
+  ];
+
+  const filteredMy  = myTuts.filter(t => !srch || t.title.toLowerCase().includes(srch.toLowerCase()));
+  const filteredPub = tuts.filter(t => t.userId!==u.id && t.status==="published" && (!srch||t.title.toLowerCase().includes(srch.toLowerCase())));
+
+  return (
+    <div className="shell">
+      <Sidebar user={u} groups={groups} page={page} setPage={setPage} logout={logout} planLabel={plan.label} planColor={pc[u.plan]}/>
+      <div className="main">
+        <div className="topbar">
+          <div className="sbar"><Ic n="search" s={13}/><input placeholder="Buscar tutoriales..." value={srch} onChange={e => setSrch(e.target.value)}/></div>
+          <div style={{ marginLeft:"auto" }}><div className="ibtn"><Ic n="bell" s={14}/></div></div>
+        </div>
+        <div className="page">
+          {page==="home"      && <UHome u={u} plan={plan} pc={pc} myTuts={myTuts} assigned={assigned} myCompls={myCompls} onNew={()=>setShowNew(true)} onView={openModal} setPage={setPage}/>}
+          {page==="my"        && <UMy tuts={filteredMy} plan={plan} onFav={toggleFav} onDel={delTut} onView={openModal} onNew={()=>setShowNew(true)} toast={toast}/>}
+          {page==="assigned"  && <UAssigned tuts={assigned} myCompls={myCompls} onView={openModal}/>}
+          {page==="favs"      && <UFavs tuts={favTuts} onFav={toggleFav} onView={openModal}/>}
+          {page==="templates" && <UTemplates toast={toast}/>}
+          {page==="explore"   && <UExplore tuts={filteredPub} onView={openModal}/>}
+          {page==="certs"     && <UCerts u={u} myCompls={myCompls} tuts={tuts}/>}
+          {page==="plan"      && <UPlan u={u} plan={plan} pc={pc} myTuts={myTuts} setPage={setPage}/>}
+        </div>
+      </div>
+
+      {showNew && (
+        <NewTutModal
+          plan={plan}
+          allUsers={users.filter(x => x.id !== u.id)}
+          onClose={() => setShowNew(false)}
+          onSave={t => { setTuts(p => [{...t, userId:u.id, favorite:false}, ...p]); setShowNew(false); toast("¡Tutorial creado!"); }}
+        />
+      )}
+
+      {modal && modal.mode==="view"  && <ViewModal tut={modal.tut} user={u} myCompls={myCompls} onClose={closeModal} onFav={toggleFav} onQuiz={()=>setModal({tut:modal.tut,mode:"quiz"})} onChat={()=>setModal({tut:modal.tut,mode:"chat"})} onCert={()=>setModal({tut:modal.tut,mode:"cert"})} toast={toast}/>}
+      {modal && modal.mode==="quiz"  && <QuizModal tut={modal.tut} user={u} onClose={closeModal} onComplete={score=>{setCompls(p=>[...p,{userId:u.id,tutId:modal.tut.id,score,date:new Date().toISOString().slice(0,10),certified:modal.tut.certOn}]);setModal({tut:modal.tut,mode:"cert"});toast("Quiz completado! Score: "+score+"%");}}/>}
+      {modal && modal.mode==="cert"  && <CertModal tut={modal.tut} user={u} compl={compls.find(c=>c.userId===u.id&&c.tutId===modal.tut.id)} onClose={closeModal}/>}
+      {modal && modal.mode==="chat"  && <ChatModal tut={modal.tut} onClose={closeModal}/>}
+    </div>
+  );
+}
+
+/* ─── USER PAGES ─────────────────────────────────────────────── */
+function UHome({ u, plan, pc, myTuts, assigned, myCompls, onNew, onView, setPage }) {
+  const pending = assigned.filter(t => !myCompls.find(c => c.tutId===t.id));
+  return (
+    <div>
+      <div className="ph">
+        <div><div className="ptl">Hola, {u.name.split(" ")[0]} 👋</div><div className="psu">Plan <strong style={{color:pc[u.plan]}}>{plan.label}</strong>{u.workspace ? ` · ${u.workspace}` : ""}</div></div>
+        <button className="btn btn-p" onClick={onNew}><Ic n="plus" s={13}/>Crear Tutorial</button>
+      </div>
+      <div className="sg3">
+        {[["Tutoriales",myTuts.length,"#5B7CFA"],["Certificados",myCompls.filter(c=>c.certified).length,"#8B5CF6"],["Pendientes",pending.length,"#F59E0B"]].map(([l,v,c]) => (
+          <div key={l} className="sc" style={{borderTopColor:c}}><div className="sl">{l}</div><div className="sv" style={{color:c}}>{v}</div></div>
+        ))}
+      </div>
+      {pending.length > 0 && (
+        <div style={{background:"rgba(245,158,11,.06)",border:"1px solid rgba(245,158,11,.18)",borderRadius:12,padding:15,marginBottom:16}}>
+          <div style={{fontWeight:700,fontSize:13,marginBottom:10}}>📋 Pendientes de completar</div>
+          {pending.slice(0,3).map(t => (
+            <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,padding:"9px 12px",background:"var(--card)",border:"1px solid var(--bdr)",borderRadius:8,marginBottom:7}}>
+              <span style={{fontSize:18}}>{t.type==="video"?"🎬":t.type==="voice"?"🎙️":"📄"}</span>
+              <div style={{flex:1}}><div style={{fontSize:12,fontWeight:600}}>{t.title}</div><div style={{fontSize:10,color:"var(--mut)"}}>{t.dept} · {t.duration}</div></div>
+              <button className="btn btn-p btn-sm" onClick={() => onView(t,"view")}>Ver ahora</button>
+            </div>
+          ))}
+        </div>
+      )}
+      {myTuts.length > 0 ? (
+        <><div style={{fontWeight:700,marginBottom:12,fontSize:14}}>📚 Recientes</div>
+        <div className="tgrid">{myTuts.slice(0,4).map(t => <TutCard key={t.id} t={t} onView={() => onView(t)} noActions/>)}</div></>
+      ) : (
+        <div className="card"><div className="cb" style={{textAlign:"center",padding:"42px 20px"}}>
+          <div style={{fontSize:50,marginBottom:11}}>🎓</div>
+          <div style={{fontWeight:700,fontSize:16,marginBottom:7}}>¡Creá tu primer tutorial!</div>
+          <div style={{color:"var(--mut)",fontSize:12.5,marginBottom:17}}>Desde URL, imagen, QR, grabación o archivo Office. Con IA.</div>
+          <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
+            <button className="btn btn-p" onClick={onNew}><Ic n="plus" s={13}/>Crear tutorial</button>
+            <button className="btn btn-s" onClick={()=>setPage("templates")}><Ic n="template" s={13}/>Ver templates</button>
+          </div>
+        </div></div>
+      )}
+      {u.plan==="free" && (
+        <div style={{marginTop:15,background:"linear-gradient(135deg,rgba(91,124,250,.09),rgba(139,92,246,.09))",border:"1px solid rgba(91,124,250,.2)",borderRadius:12,padding:15,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+          <div><div style={{fontWeight:700,fontSize:13}}>🚀 Desbloqueá Video, Voz, Quiz y Certificados</div><div style={{fontSize:11.5,color:"var(--mut)",marginTop:2}}>Pro $29/mes · Business $99/mes</div></div>
+          <button className="btn btn-p btn-sm" onClick={()=>setPage("plan")}>Ver planes →</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function UMy({ tuts, plan, onFav, onDel, onView, onNew, toast }) {
+  return (
+    <div>
+      <div className="ph"><div><div className="ptl">Mis Tutoriales</div><div className="psu">{tuts.length} creados</div></div><button className="btn btn-p btn-sm" onClick={onNew}><Ic n="plus" s={12}/>Nuevo</button></div>
+      {!tuts.length
+        ? <div className="empty"><div style={{fontSize:44}}>📚</div><div>No creaste tutoriales aún</div><button className="btn btn-p btn-sm" style={{marginTop:12}} onClick={onNew}>Crear uno</button></div>
+        : <div className="tgrid">{tuts.map(t => (
+            <TutCard key={t.id} t={t} onView={()=>onView(t)} onFav={()=>onFav(t.id)} onDel={()=>onDel(t.id)} onQuiz={t.quizOn?()=>onView(t,"quiz"):null} onChat={()=>onView(t,"chat")} onShare={()=>toast("Link copiado: tutorai.app/t/"+t.id)} onDl={()=>toast("Descargando PDF...")}/>
+          ))}</div>
+      }
+    </div>
+  );
+}
+
+function UAssigned({ tuts, myCompls, onView }) {
+  return (
+    <div>
+      <div className="ph"><div><div className="ptl">Tutoriales Asignados</div><div className="psu">{tuts.length} asignados</div></div></div>
+      {!tuts.length
+        ? <div className="empty"><div style={{fontSize:44}}>📋</div><div>No tenés tutoriales asignados</div></div>
+        : <div style={{display:"flex",flexDirection:"column",gap:9}}>
+            {tuts.map(t => {
+              const c = myCompls.find(x => x.tutId===t.id);
+              return (
+                <div key={t.id} style={{display:"flex",alignItems:"center",gap:12,padding:"13px 15px",background:"var(--card)",border:"1px solid var(--bdr)",borderRadius:12}}>
+                  <div style={{width:42,height:42,borderRadius:9,background:t.type==="video"?"#1A0D30":t.type==="voice"?"#0D1130":"#0D1A30",display:"flex",alignItems:"center",justifyContent:"center",fontSize:19,flexShrink:0}}>{t.type==="video"?"🎬":t.type==="voice"?"🎙️":"📄"}</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:600,fontSize:13}}>{t.title}</div>
+                    <div style={{fontSize:10.5,color:"var(--mut)",marginTop:2}}>{t.dept} · {t.duration} · {t.lang}</div>
+                    {c && <div style={{fontSize:10.5,color:"var(--grn)",marginTop:2}}>✓ Completado · Score: {c.score}%{c.certified?" · 🎓 Certificado":""}</div>}
+                  </div>
+                  <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+                    {c ? <span className="bd bg">✓ Listo</span> : <button className="btn btn-p btn-sm" onClick={()=>onView(t,"view")}>Empezar</button>}
+                    {t.quizOn && !c && <button className="btn btn-s btn-sm" onClick={()=>onView(t,"quiz")}><Ic n="quiz" s={11}/>Quiz</button>}
+                    {t.certOn && c?.certified && <button className="btn btn-s btn-sm" style={{color:"var(--v2)"}} onClick={()=>onView(t,"cert")}><Ic n="cert" s={11}/>Cert.</button>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+      }
+    </div>
+  );
+}
+
+function UFavs({ tuts, onFav, onView }) {
+  return (
+    <div>
+      <div className="ph"><div><div className="ptl">Favoritos ⭐</div></div></div>
+      {!tuts.length ? <div className="empty"><div style={{fontSize:44}}>⭐</div><div>Marcá tutoriales como favoritos</div></div>
+        : <div className="tgrid">{tuts.map(t => <TutCard key={t.id} t={t} onView={()=>onView(t)} onFav={()=>onFav(t.id)} noActions/>)}</div>}
+    </div>
+  );
+}
+
+function UTemplates({ toast }) {
+  return (
+    <div>
+      <div className="ph"><div><div className="ptl">Templates de Industria</div><div className="psu">Plantillas listas para personalizar con IA</div></div></div>
+      <div className="tgrid">
+        {TEMPLATES.map(t => (
+          <div key={t.id} className="tc">
+            <div className="tthumb" style={{background:"#0D1A30",fontSize:38}}>{t.icon}</div>
+            <div className="tbody">
+              <div className="ttitle">{t.title}</div>
+              <div style={{fontSize:11,color:"var(--mut)",marginBottom:9,lineHeight:1.5}}>{t.desc}</div>
+              <span className="tag" style={{marginBottom:9,display:"inline-block"}}>{t.dept}</span>
+              <button className="btn btn-p btn-sm" style={{width:"100%",justifyContent:"center"}} onClick={()=>toast("Template: "+t.title+" — personalizá con IA")}>
+                <Ic n="plus" s={11}/>Usar template
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function UExplore({ tuts, onView }) {
+  return (
+    <div>
+      <div className="ph"><div><div className="ptl">Explorar</div><div className="psu">Tutoriales públicos de la comunidad</div></div></div>
+      {!tuts.length ? <div className="empty"><div style={{fontSize:44}}>🌎</div><div>No hay tutoriales públicos aún</div></div>
+        : <div className="tgrid">{tuts.map(t => <TutCard key={t.id} t={t} onView={()=>onView(t)} noActions/>)}</div>}
+    </div>
+  );
+}
+
+function UCerts({ u, myCompls, tuts }) {
+  const certs = myCompls.filter(c => c.certified);
+  return (
+    <div>
+      <div className="ph"><div><div className="ptl">Mis Certificados 🎓</div><div className="psu">{certs.length} obtenidos</div></div></div>
+      {!certs.length
+        ? <div className="empty"><div style={{fontSize:50}}>🎓</div><div>Completá tutoriales con quiz para obtener certificados</div></div>
+        : <div style={{display:"flex",flexDirection:"column",gap:14}}>
+            {certs.map((c,i) => {
+              const t = tuts.find(x => x.id===c.tutId);
+              if (!t) return null;
+              return (
+                <div key={i} className="cert">
+                  <div className="cert-seal">🎓</div>
+                  <div className="cert-lbl">TutorAI · Certificado de Capacitación</div>
+                  <div style={{fontSize:13,color:"var(--mut)",marginBottom:5}}>Se certifica que</div>
+                  <div className="cert-name">{u.name}</div>
+                  <div style={{fontSize:13,color:"var(--lt)",marginBottom:4}}>completó exitosamente</div>
+                  <div style={{fontWeight:700,fontSize:16,marginBottom:4}}>{t.title}</div>
+                  <div style={{fontSize:12,color:"var(--mut)",marginBottom:13}}>Score: <strong style={{color:"var(--grn)"}}>{c.score}%</strong> · {c.date}</div>
+                  <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+                    <button className="btn btn-s btn-sm"><Ic n="dl" s={11}/>Descargar PDF</button>
+                    <button className="btn btn-s btn-sm"><Ic n="share" s={11}/>LinkedIn</button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+      }
+    </div>
+  );
+}
+
+function UPlan({ u, plan, pc, myTuts, setPage }) {
+  return (
+    <div>
+      <div className="ph"><div><div className="ptl">Mi Plan</div></div></div>
+      <div className="card" style={{padding:19,marginBottom:17}}>
+        <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:15}}>
+          <div style={{width:48,height:48,borderRadius:13,background:`${pc[u.plan]}22`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:21}}>{u.plan==="free"?"🆓":u.plan==="pro"?"💼":"🏢"}</div>
+          <div><div style={{fontWeight:800,fontSize:17,fontFamily:"'Syne',sans-serif"}}>{plan.label}</div><div style={{color:"var(--mut)",fontSize:12}}>{plan.price==="$0"?"Gratis":plan.price+"/mes"} · Activo</div></div>
+          <span className="bd" style={{marginLeft:"auto",background:`${pc[u.plan]}22`,color:pc[u.plan]}}>{u.plan.toUpperCase()}</span>
+        </div>
+        <div style={{marginBottom:13}}>
+          <div style={{fontSize:11,color:"var(--mut)",marginBottom:4}}>Tutoriales: {myTuts.length}/{plan.tuts===999?"∞":plan.tuts}</div>
+          <div className="pbar-wrap"><div className="pbar-fill" style={{width:`${plan.tuts===999?20:Math.min(100,(myTuts.length/plan.tuts)*100)}%`}}/></div>
+        </div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+          {plan.types.map(t => <span key={t} className="tag">{t==="text"?"📄 Texto":t==="voice"?"🎙️ Voz":"🎬 Video"}</span>)}
+          <span className="tag">🌐 {plan.langs===1?"Solo Español":plan.langs+" idiomas"}</span>
+          <span className="tag">👥 {plan.seats} seat{plan.seats>1?"s":""}</span>
+        </div>
+      </div>
+      {u.plan==="free" && (
+        <div className="g2">
+          {Object.entries(PLANS).filter(([k])=>k!=="free").map(([k,pl]) => (
+            <div key={k} className={`plc${k==="pro"?" ft":""}`}>
+              {k==="pro" && <div className="bd bb" style={{marginBottom:7}}>⭐ Recomendado</div>}
+              <div style={{fontSize:20,marginBottom:5}}>{k==="pro"?"💼":"🏢"}</div>
+              <div style={{fontWeight:800,fontSize:14,fontFamily:"'Syne',sans-serif"}}>{pl.label}</div>
+              <div className="plprice" style={{color:pl.color}}>{pl.price}<span style={{fontSize:11,fontWeight:400,color:"var(--mut)"}}>/mes</span></div>
+              {[`${pl.tuts===999?"Ilimitados":pl.tuts} tutoriales/mes`,"Video + Voz + Texto",`${pl.langs} idiomas`,`${pl.seats} seats de equipo`,"Quiz + Certificados","Asignación de tutoriales"].map((f,i)=>(
+                <div key={i} className="plf"><span style={{color:"var(--grn)"}}>✓</span>{f}</div>
+              ))}
+              <button className="btn btn-p btn-full btn-sm" style={{marginTop:13,fontSize:11.5}}>Actualizar a {pl.label}</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── TUT CARD ───────────────────────────────────────────────── */
+function TutCard({ t, onView, onFav, onDel, onQuiz, onChat, onShare, onDl, noActions }) {
+  const bg = { text:"#0D1A30", voice:"#0D1130", video:"#1A0D30" };
+  const em = { text:"📄", voice:"🎙️", video:"🎬" };
+  return (
+    <div className="tc">
+      <div className="tthumb" style={{background:bg[t.type]||bg.text}} onClick={onView}>
+        <span>{em[t.type]||"📄"}</span>
+        {t.favorite && <span style={{position:"absolute",top:7,right:7,fontSize:12}}>⭐</span>}
+        {t.quizOn && <span style={{position:"absolute",top:7,left:7,fontSize:10,background:"rgba(139,92,246,.75)",color:"#fff",padding:"1px 5px",borderRadius:4,fontWeight:700}}>QUIZ</span>}
+      </div>
+      <div className="tbody">
+        <div className="ttitle" onClick={onView}>{t.title}</div>
+        <div className="tmeta"><TBadge type={t.type}/><span className="tag">{t.lang}</span>{t.dept&&<span className="tag">{t.dept}</span>}</div>
+        <div className="tstats"><span>👁 {t.views}</span><span>✅ {t.completions}</span><span>⏱ {t.duration}</span></div>
+        {noActions
+          ? <button className="btn btn-s btn-sm" style={{width:"100%",justifyContent:"center"}} onClick={onView}><Ic n="play" s={10}/>Ver Tutorial</button>
+          : <div className="tact">
+              <button className="ibtn" style={{width:25,height:25}} onClick={onView}><Ic n="play" s={9}/></button>
+              {onQuiz  && <button className="ibtn" style={{width:25,height:25}} onClick={onQuiz} title="Quiz"><Ic n="quiz" s={9}/></button>}
+              {onChat  && <button className="ibtn" style={{width:25,height:25}} onClick={onChat} title="Chat IA"><Ic n="chat" s={9}/></button>}
+              {onDl    && <button className="ibtn" style={{width:25,height:25}} onClick={onDl}><Ic n="dl" s={9}/></button>}
+              {onShare && <button className="ibtn" style={{width:25,height:25}} onClick={onShare}><Ic n="share" s={9}/></button>}
+              {onFav   && <button className="ibtn" style={{width:25,height:25,color:t.favorite?"var(--org)":"var(--mut)"}} onClick={onFav}><Ic n="star" s={9}/></button>}
+              {onDel   && <button className="ibtn btn-d" style={{width:25,height:25,marginLeft:"auto"}} onClick={onDel}><Ic n="trash" s={9}/></button>}
+            </div>
+        }
+      </div>
+    </div>
+  );
+}
+
+/* ─── VIEW MODAL ─────────────────────────────────────────────── */
+function ViewModal({ tut, user, myCompls, onClose, onFav, onQuiz, onChat, onCert, toast }) {
+  const done = myCompls.find(c => c.tutId===tut.id);
+  return (
+    <div className="ov" onClick={e => e.target===e.currentTarget && onClose()}>
+      <div className="modal modal-lg">
+        <div className="mh">
+          <div><div className="mt">{tut.title}</div><div style={{fontSize:11,color:"var(--mut)",marginTop:2}}>{tut.dept} · {tut.lang} · {tut.duration}</div></div>
+          <button className="ibtn" onClick={onClose}><Ic n="close" s={13}/></button>
+        </div>
+        <div className="mb">
+          <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:15}}>
+            <TBadge type={tut.type}/><SBadge status={tut.status}/>
+            {tut.quizOn && <span className="bd bp">🧠 Quiz</span>}
+            {tut.certOn && <span className="bd bc">🎓 Certificado</span>}
+          </div>
+          <div className="g4" style={{marginBottom:15}}>
+            {[["👁 Vistas",tut.views,"var(--acc)"],["✅ Completaciones",tut.completions,"var(--grn)"],["📅 Creado",tut.created,"var(--mut)"],["⏱ Duración",tut.duration,"var(--org)"]].map(([l,v,c]) => (
+              <div key={l} style={{padding:9,background:"var(--bg)",borderRadius:8,border:"1px solid var(--bdr)"}}>
+                <div style={{fontSize:9.5,color:"var(--mut)",marginBottom:2}}>{l}</div>
+                <div style={{fontWeight:700,fontSize:13,color:c}}>{v}</div>
+              </div>
+            ))}
+          </div>
+          {done && (
+            <div style={{background:"rgba(16,185,129,.07)",border:"1px solid rgba(16,185,129,.2)",borderRadius:9,padding:11,marginBottom:13,display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:19}}>✅</span>
+              <div><div style={{fontWeight:600,fontSize:12.5,color:"var(--grn)"}}>Completado</div><div style={{fontSize:11,color:"var(--mut)"}}>Score: {done.score}% · {done.date}{done.certified?" · 🎓 Certificado disponible":""}</div></div>
+              {done.certified && <button className="btn btn-s btn-sm" style={{marginLeft:"auto",color:"var(--v2)"}} onClick={onCert}><Ic n="cert" s={11}/>Ver cert.</button>}
+            </div>
+          )}
+          <div style={{textAlign:"center",padding:"30px 0",background:"var(--bg)",borderRadius:10,border:"1px solid var(--bdr)",marginBottom:13}}>
+            <div style={{fontSize:48,marginBottom:8}}>{tut.type==="video"?"🎬":tut.type==="voice"?"🎙️":"📄"}</div>
+            <div style={{fontWeight:700,marginBottom:4}}>Contenido del Tutorial</div>
+            <div style={{color:"var(--mut)",fontSize:12,marginBottom:13}}>Generado por IA · {tut.lang}</div>
+            <button className="btn btn-p btn-sm"><Ic n="play" s={12}/>Reproducir</button>
+          </div>
+          <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
+            <button className="btn btn-s btn-sm" onClick={()=>toast("Descargando PDF...")}><Ic n="dl" s={11}/>PDF</button>
+            <button className="btn btn-s btn-sm" onClick={()=>toast("Link copiado")}><Ic n="share" s={11}/>Compartir</button>
+            <button className="btn btn-s btn-sm" style={{color:tut.favorite?"var(--org)":"inherit"}} onClick={()=>onFav(tut.id)}><Ic n="star" s={11}/>{tut.favorite?"Quitar fav":"Favorito"}</button>
+            <button className="btn btn-s btn-sm" onClick={onChat}><Ic n="chat" s={11}/>Chat IA</button>
+            {tut.quizOn && <button className="btn btn-p btn-sm" onClick={onQuiz}><Ic n="quiz" s={11}/>Hacer Quiz</button>}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── QUIZ MODAL ─────────────────────────────────────────────── */
+function QuizModal({ tut, user, onClose, onComplete }) {
+  const [qs, setQs]             = useState(null);
+  const [answers, setAnswers]   = useState({});
+  const [submitted, setSubmit]  = useState(false);
+  const [score, setScore]       = useState(0);
+  const [loading, setLoading]   = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const prompt = `Genera 4 preguntas de opción múltiple en ${tut.lang} sobre el tutorial: "${tut.title}". Responde SOLO con JSON válido sin markdown:\n[{"question":"texto","options":["A) ...","B) ...","C) ...","D) ..."],"correct":0}]\n"correct" es el índice 0-3 de la respuesta correcta.`;
+      const r = await ai(prompt);
+      try {
+        const parsed = JSON.parse(r.replace(/```json|```/g,"").trim());
+        setQs(Array.isArray(parsed) ? parsed.slice(0,4) : null);
+      } catch {
+        setQs([
+          {question:`¿Cuál es el primer paso para ${tut.title.toLowerCase()}?`,options:["A) Verificar acceso","B) Saltar pasos","C) Ignorar instrucciones","D) Improvisar"],correct:0},
+          {question:"¿Qué hacer antes de finalizar el proceso?",options:["A) Cerrar sin guardar","B) Verificar y guardar los datos","C) Nada especial","D) Llamar a soporte"],correct:1},
+          {question:"¿Cuándo se considera completado el proceso?",options:["A) Al abrirlo","B) A la mitad","C) Al completar todos los pasos","D) Nunca"],correct:2},
+          {question:"¿Por qué es importante seguir el proceso correctamente?",options:["A) No es importante","B) Mejora eficiencia y reduce errores","C) Solo por cumplir reglas","D) Es opcional"],correct:1},
+        ]);
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  const submit = () => {
+    if (!qs) return;
+    let correct = 0;
+    qs.forEach((q,i) => { if (answers[i] === q.correct) correct++; });
+    const s = Math.round((correct / qs.length) * 100);
+    setScore(s);
+    setSubmit(true);
+  };
+
+  return (
+    <div className="ov" onClick={e => e.target===e.currentTarget && !loading && onClose()}>
+      <div className="modal modal-lg">
+        <div className="mh">
+          <div className="mt">🧠 Quiz — {tut.title}</div>
+          {!loading && <button className="ibtn" onClick={onClose}><Ic n="close" s={13}/></button>}
+        </div>
+        <div className="mb">
+          {loading && (
+            <div className="aild">
+              <div className="aiorb"><span style={{fontSize:22}}>🧠</span></div>
+              <div style={{fontWeight:700}}>Generando preguntas con IA...</div>
+              <div style={{color:"var(--mut)",fontSize:12}}>Claude crea preguntas específicas para este tutorial</div>
+            </div>
+          )}
+          {!loading && submitted && (
+            <div style={{textAlign:"center",padding:"18px 0"}}>
+              <div style={{fontSize:56,marginBottom:12}}>{score>=80?"🎉":score>=60?"👍":"💪"}</div>
+              <div style={{fontFamily:"'Syne',sans-serif",fontSize:22,fontWeight:800,marginBottom:7}}>
+                Score: <span style={{color:score>=80?"var(--grn)":score>=60?"var(--org)":"var(--red)"}}>{score}%</span>
+              </div>
+              <div style={{color:"var(--mut)",fontSize:13,marginBottom:18}}>
+                {score>=80?"¡Excelente! Podés obtener tu certificado.":score>=60?"Buen trabajo.":"Repasá el tutorial e intentá de nuevo."}
+              </div>
+              <div className="g2" style={{maxWidth:340,margin:"0 auto 18px"}}>
+                {qs && qs.map((q,i) => (
+                  <div key={i} style={{padding:"9px 11px",borderRadius:8,background:answers[i]===q.correct?"rgba(16,185,129,.08)":"rgba(239,68,68,.08)",border:`1px solid ${answers[i]===q.correct?"rgba(16,185,129,.22)":"rgba(239,68,68,.22)"}`}}>
+                    <div style={{fontSize:10.5,fontWeight:700,color:answers[i]===q.correct?"var(--grn)":"var(--red)"}}>{answers[i]===q.correct?"✓ Correcta":"✗ Incorrecta"}</div>
+                    <div style={{fontSize:10.5,marginTop:1,color:"var(--lt)"}}>{q.question.slice(0,55)}…</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{display:"flex",gap:8,justifyContent:"center",flexWrap:"wrap"}}>
+                {score>=60 && tut.certOn && <button className="btn btn-p" onClick={()=>onComplete(score)}><Ic n="cert" s={13}/>Obtener Certificado</button>}
+                <button className="btn btn-s" onClick={onClose}>Cerrar</button>
+                {score<60 && <button className="btn btn-s" onClick={()=>{setAnswers({});setSubmit(false);}}>Intentar de nuevo</button>}
+              </div>
+            </div>
+          )}
+          {!loading && !submitted && qs && (
+            <>
+              <div style={{marginBottom:14,fontSize:12,color:"var(--mut)"}}>Respondé las {qs.length} preguntas</div>
+              {qs.map((q,qi) => (
+                <div key={qi} className="qq">
+                  <div style={{fontWeight:600,fontSize:13,marginBottom:7}}>{qi+1}. {q.question}</div>
+                  {q.options.map((opt,oi) => (
+                    <div key={oi} className={`qopt${answers[qi]===oi?" sel":""}`} onClick={()=>setAnswers(p=>({...p,[qi]:oi}))}>
+                      <div style={{width:15,height:15,borderRadius:"50%",border:`2px solid ${answers[qi]===oi?"var(--acc)":"var(--bdr)"}`,background:answers[qi]===oi?"var(--acc)":"transparent",flexShrink:0,transition:".13s"}}/>
+                      {opt}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+        {!loading && !submitted && qs && (
+          <div className="mf">
+            <button className="btn btn-s btn-sm" onClick={onClose}>Cancelar</button>
+            <button className="btn btn-p btn-sm" onClick={submit} disabled={Object.keys(answers).length < qs.length}>
+              Enviar ({Object.keys(answers).length}/{qs.length})
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── CERT MODAL ─────────────────────────────────────────────── */
+function CertModal({ tut, user, compl, onClose }) {
+  return (
+    <div className="ov" onClick={e => e.target===e.currentTarget && onClose()}>
+      <div className="modal modal-lg">
+        <div className="mh"><div className="mt">🎓 Certificado de Capacitación</div><button className="ibtn" onClick={onClose}><Ic n="close" s={13}/></button></div>
+        <div className="mb">
+          <div className="cert">
+            <div className="cert-seal">🎓</div>
+            <div className="cert-lbl">TutorAI · Certificado de Capacitación Profesional</div>
+            <div style={{fontSize:13,color:"var(--mut)",margin:"7px 0 4px"}}>Se certifica que</div>
+            <div className="cert-name">{user.name}</div>
+            <div style={{fontSize:13,color:"var(--lt)",margin:"4px 0"}}>ha completado exitosamente</div>
+            <div style={{fontWeight:700,fontSize:16,margin:"5px 0 4px"}}>{tut.title}</div>
+            <div style={{display:"flex",gap:18,justifyContent:"center",margin:"10px 0",fontSize:12,color:"var(--mut)"}}>
+              <span>📊 Score: <strong style={{color:"var(--grn)"}}>{compl?.score||85}%</strong></span>
+              <span>📅 Fecha: <strong>{compl?.date||new Date().toISOString().slice(0,10)}</strong></span>
+              <span>⏱ {tut.duration}</span>
+            </div>
+            <div style={{fontSize:9.5,color:"var(--mut)",marginTop:12,borderTop:"1px solid var(--bdr)",paddingTop:9}}>
+              ID: TUTAI-{tut.id}-{user.id}-{Date.now().toString(36).toUpperCase()} · tutorai.app/verify
+            </div>
+          </div>
+          <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:15,flexWrap:"wrap"}}>
+            <button className="btn btn-p"><Ic n="dl" s={13}/>Descargar PDF</button>
+            <button className="btn btn-s"><Ic n="share" s={13}/>LinkedIn</button>
+            <button className="btn btn-s" onClick={onClose}>Cerrar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── CHAT MODAL ─────────────────────────────────────────────── */
+function ChatModal({ tut, onClose }) {
+  const [msgs, setMsgs]   = useState([{ role:"bot", text:`¡Hola! Soy tu asistente para "${tut.title}". Preguntame cualquier duda sobre el contenido. ¿En qué te ayudo?` }]);
+  const [input, setInput] = useState("");
+  const [busy, setBusy]   = useState(false);
+  const endRef            = useRef(null);
+
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior:"smooth" }); }, [msgs]);
+
+  const send = async () => {
+    const q = input.trim();
+    if (!q || busy) return;
+    setInput("");
+    setMsgs(p => [...p, { role:"user", text:q }, { role:"bot", text:"●●●", loading:true }]);
+    setBusy(true);
+    const sys = `Eres un asistente de capacitación conciso. El usuario ve el tutorial: "${tut.title}" (área: ${tut.dept}, idioma: ${tut.lang}). Respondé en ${tut.lang}, máximo 3 párrafos cortos.`;
+    const r = await ai(`Pregunta: ${q}`, sys);
+    const reply = r || "No pude conectar. Intentá de nuevo.";
+    setMsgs(p => [...p.slice(0,-1), { role:"bot", text:reply }]);
+    setBusy(false);
+  };
+
+  return (
+    <div className="ov" onClick={e => e.target===e.currentTarget && onClose()}>
+      <div className="modal">
+        <div className="mh">
+          <div><div className="mt">💬 Asistente IA</div><div style={{fontSize:11,color:"var(--mut)",marginTop:1}}>{tut.title}</div></div>
+          <button className="ibtn" onClick={onClose}><Ic n="close" s={13}/></button>
+        </div>
+        <div className="chat-wrap">
+          <div className="chat-msgs">
+            {msgs.map((m,i) => (
+              <div key={i} className={`chat-msg ${m.role}`} style={{opacity:m.loading?0.5:1}}>
+                {m.text}
+              </div>
+            ))}
+            <div ref={endRef}/>
+          </div>
+          <div className="chat-in">
+            <input placeholder="Preguntá algo..." value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&send()}/>
+            <button className="btn btn-p btn-sm" onClick={send} disabled={busy||!input.trim()}>Enviar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── NEW TUTORIAL MODAL ─────────────────────────────────────── */
+function NewTutModal({ onClose, onSave, plan, isAdmin, allUsers=[] }) {
+  const [step, setStep]         = useState(1);
+  const [src, setSrc]           = useState("url");
+  const [out, setOut]           = useState(isAdmin ? "video" : (plan?.types[0]||"text"));
+  const [lang, setLang]         = useState("Español");
+  const [url, setUrl]           = useState("");
+  const [title, setTitle]       = useState("");
+  const [dept, setDept]         = useState("RRHH");
+  const [quizOn, setQuizOn]     = useState(true);
+  const [certOn, setCertOn]     = useState(true);
+  const [assignTo, setAssignTo] = useState([]);
+  const [steps, setSteps]       = useState([]);
+  const [editMode, setEditMode] = useState(false);
+  const [done, setDone]         = useState([]);
+  const [loading, setLoading]   = useState(false);
+
+  const maxL    = isAdmin ? 9 : (plan?.langs || 1);
+  const availOut = isAdmin ? OUTPUTS : OUTPUTS.filter(o => plan?.types.includes(o.id));
+
+  const aiSteps = ["Analizando fuente...","Extrayendo contenido...","Estructurando pasos...","Traduciendo al "+lang+"...","Aplicando formato "+out+"...","Optimizando...","¡Listo!"];
+
+  const generate = async () => {
+    setStep(3); setDone([]); setLoading(true);
+    for (let i = 0; i < aiSteps.length-1; i++) {
+      await new Promise(r => setTimeout(r, 480 + Math.random()*300));
+      setDone(p => [...p, i]);
+    }
+    const prompt = `Sos experto en capacitación empresarial. Creá un tutorial profesional en ${lang} sobre: "${title||url||"el proceso indicado"}". Área: ${dept}. Formato: ${out==="video"?"video animado":out==="voice"?"narración de audio":"texto estructurado"}.\n\nUsá EXACTAMENTE este formato:\nPASO 1: [título]\n[descripción 2-3 oraciones]\n\nPASO 2: [título]\n[descripción]\n\n(hasta PASO 5)\n\nTIEMPO: X minutos\n\nSolo los pasos, sin intro ni conclusión.`;
+    const r = await ai(prompt);
+    const raw = r || fallback(title||url, dept);
+    const ps  = parseSteps(raw);
+    setSteps(ps.length ? ps : [{ num:"1", title:"Proceso completo", body:raw }]);
+    setDone(p => [...p, aiSteps.length-1]);
+    setLoading(false);
+    setStep(4);
+  };
+
+  const save = () => {
+    const t = {
+      id: Date.now(), title:title||url||"Tutorial sin título", type:out, source:src,
+      lang, dept, views:0, completions:0, status:"published",
+      created:new Date().toISOString().slice(0,10), duration:"~8 min",
+      quizOn, certOn, assignedTo:assignTo, steps,
+    };
+    onSave(t);
+  };
+
+  return (
+    <div className="ov" onClick={e => e.target===e.currentTarget && step!==3 && onClose()}>
+      <div className="modal modal-lg">
+        <div className="mh">
+          <div className="mt">
+            {step===1 && "📥 Fuente del contenido"}
+            {step===2 && "⚙️ Configuración"}
+            {step===3 && "🤖 Generando con IA..."}
+            {step===4 && "✅ Tutorial listo — Editá y publicá"}
+          </div>
+          {step!==3 && <button className="ibtn" onClick={onClose}><Ic n="close" s={13}/></button>}
+        </div>
+
+        <div className="mb">
+          {/* PASO 1 */}
+          {step===1 && (
+            <>
+              <div className="fg">
+                <label>Fuente de contenido</label>
+                <div className="srcg">
+                  {SOURCES.map(s => (
+                    <div key={s.id} className={`sri${src===s.id?" on":""}`} onClick={() => setSrc(s.id)}>
+                      <div style={{fontSize:18,marginBottom:4}}>{s.icon}</div>
+                      <div style={{fontSize:10.5,fontWeight:700}}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {src==="url" && <div className="fg"><label>URL o enlace</label><input placeholder="https://..." value={url} onChange={e=>setUrl(e.target.value)}/></div>}
+              {(src==="image"||src==="qr"||src==="barcode") && (
+                <div className="drop">
+                  <div style={{fontSize:22,marginBottom:6}}>{src==="qr"?"◼️":src==="barcode"?"▦":"🖼️"}</div>
+                  <div style={{fontWeight:600,fontSize:12.5,marginBottom:3}}>Subir {src==="qr"?"imagen QR":src==="barcode"?"código de barras":"captura"}</div>
+                  <button className="btn btn-s btn-sm" style={{marginTop:8}}>Elegir archivo</button>
+                </div>
+              )}
+              {src==="upload" && (
+                <div className="drop">
+                  <div style={{fontSize:22,marginBottom:6}}>📁</div>
+                  <div style={{fontWeight:600,fontSize:12.5,marginBottom:5}}>Archivos de empresa</div>
+                  <div style={{display:"flex",gap:3,justifyContent:"center",flexWrap:"wrap",marginBottom:7}}>{["📄Word","📊Excel","📋PPT","📑PDF","🔷SAP"].map(f=><span key={f} className="tag">{f}</span>)}</div>
+                  <button className="btn btn-s btn-sm">Elegir archivo</button>
+                </div>
+              )}
+              {src==="audio" && (
+                <div className="drop">
+                  <div style={{fontSize:22,marginBottom:6}}>🎤</div>
+                  <div style={{fontWeight:600,fontSize:12.5,marginBottom:3}}>Grabación de reunión</div>
+                  <div style={{fontSize:11,color:"var(--mut)",marginBottom:8}}>Zoom, Teams, Meet — MP3, MP4</div>
+                  <button className="btn btn-s btn-sm">Subir grabación</button>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* PASO 2 */}
+          {step===2 && (
+            <>
+              <div className="fg"><label>Título del tutorial</label><input placeholder="Ej: Cómo procesar órdenes en SAP..." value={title} onChange={e=>setTitle(e.target.value)}/></div>
+              <div className="g2">
+                <div className="fg">
+                  <label>Departamento</label>
+                  <select value={dept} onChange={e=>setDept(e.target.value)}>
+                    {["RRHH","TI","Finanzas","Ventas","Marketing","Operaciones","Legal","Compras","Producción"].map(d=><option key={d}>{d}</option>)}
+                  </select>
+                </div>
+                <div className="fg">
+                  <label>Idioma de salida</label>
+                  <select value={lang} onChange={e=>setLang(e.target.value)}>
+                    {LANGS.slice(0, maxL).map(l=><option key={l}>{l}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="fg">
+                <label>Tipo de salida</label>
+                <div className="g3">
+                  {availOut.map(o => (
+                    <div key={o.id} className={`outi${out===o.id?" on":""}`} onClick={()=>setOut(o.id)}>
+                      <span style={{fontSize:20}}>{o.icon}</span>
+                      <span style={{fontWeight:700,fontSize:12}}>{o.label}</span>
+                    </div>
+                  ))}
+                  {!isAdmin && plan && !plan.types.includes("video") && (
+                    <div className="outi" style={{opacity:.4,cursor:"not-allowed"}}>
+                      <span style={{fontSize:20}}>🎬</span>
+                      <span style={{fontSize:11,fontWeight:700}}>Video</span>
+                      <span style={{fontSize:9.5,color:"var(--org)"}}>Solo Pro+</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div style={{background:"var(--bg)",border:"1px solid var(--bdr)",borderRadius:9,padding:13,marginBottom:13}}>
+                <div style={{fontWeight:700,fontSize:12.5,marginBottom:10}}>⚙️ Opciones</div>
+                <div className="togrow" onClick={()=>setQuizOn(p=>!p)}>
+                  <div className={`tog ${quizOn?"on":"off"}`}/>
+                  <span>Activar quiz al finalizar</span>
+                  <span className="bd bp" style={{marginLeft:"auto"}}>🧠 +valor</span>
+                </div>
+                <div className="togrow" onClick={()=>setCertOn(p=>!p)} style={{marginTop:8}}>
+                  <div className={`tog ${certOn?"on":"off"}`}/>
+                  <span>Emitir certificado al aprobar</span>
+                  <span className="bd bc" style={{marginLeft:"auto"}}>🎓 +valor</span>
+                </div>
+              </div>
+              {allUsers.length > 0 && (
+                <div className="fg">
+                  <label>Asignar a miembros del equipo</label>
+                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {allUsers.map(u => (
+                      <label key={u.id} style={{display:"flex",alignItems:"center",gap:9,padding:"8px 10px",background:"var(--bg)",border:"1px solid var(--bdr)",borderRadius:7,cursor:"pointer"}}>
+                        <input type="checkbox" style={{width:"auto"}} checked={assignTo.includes(u.id)} onChange={e=>setAssignTo(p=>e.target.checked?[...p,u.id]:p.filter(x=>x!==u.id))}/>
+                        <div className="ava" style={{width:24,height:24,fontSize:9}}>{u.avatar}</div>
+                        <span style={{fontSize:12}}>{u.name}</span>
+                        <span className="bd bx" style={{marginLeft:"auto"}}>{u.plan}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* PASO 3 — AI */}
+          {step===3 && (
+            <div className="aild">
+              <div className="aiorb"><span style={{fontSize:24}}>🤖</span></div>
+              <div style={{fontWeight:700,fontSize:15}}>Claude AI generando tu tutorial</div>
+              <div style={{width:"100%",maxWidth:370}}>
+                {aiSteps.map((s,i) => (
+                  <div key={i} className={`aistep${done.includes(i)?" done":done.length===i?" cur":""}`}>
+                    {done.includes(i) ? <Ic n="check" s={12}/> : <span style={{width:12,height:12,display:"inline-block",borderRadius:"50%",border:"1.5px solid currentColor"}}/>}
+                    {s}
+                  </div>
+                ))}
+              </div>
+              <div style={{width:"75%",maxWidth:280}}>
+                <div className="pbar-wrap"><div className="pbar-fill" style={{width:`${Math.round((done.length/aiSteps.length)*100)}%`}}/></div>
+                <div style={{fontSize:10,color:"var(--mut)",textAlign:"center",marginTop:3}}>{Math.round((done.length/aiSteps.length)*100)}%</div>
+              </div>
+            </div>
+          )}
+
+          {/* PASO 4 — Resultado */}
+          {step===4 && steps.length > 0 && (
+            <>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:13,gap:8,flexWrap:"wrap"}}>
+                <div style={{display:"flex",alignItems:"center",gap:7,padding:"8px 12px",background:"rgba(16,185,129,.07)",borderRadius:8,border:"1px solid rgba(16,185,129,.15)",flex:1}}>
+                  <Ic n="check" s={13}/><span style={{fontWeight:600,color:"var(--grn)",fontSize:12}}>Generado en {lang} · {out}</span>
+                </div>
+                <button className="btn btn-s btn-sm" onClick={()=>setEditMode(p=>!p)}><Ic n="edit" s={11}/>{editMode?"Preview":"Editar"}</button>
+              </div>
+              <div style={{display:"flex",gap:5,marginBottom:13,flexWrap:"wrap"}}>
+                {quizOn && <span className="bd bp">🧠 Quiz activado</span>}
+                {certOn && <span className="bd bc">🎓 Certificado activado</span>}
+                {assignTo.length>0 && <span className="bd bb">👥 Asignado a {assignTo.length} persona{assignTo.length>1?"s":""}</span>}
+              </div>
+              {steps.map((s,i) => (
+                <div key={i} className="step-box">
+                  <div className="step-n">Paso {s.num}</div>
+                  {editMode ? (
+                    <>
+                      <input className="step-ti" value={s.title} onChange={e=>setSteps(p=>p.map((x,j)=>j===i?{...x,title:e.target.value}:x))}/>
+                      <textarea className="step-bo" value={s.body} onChange={e=>setSteps(p=>p.map((x,j)=>j===i?{...x,body:e.target.value}:x))}/>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{fontWeight:700,fontSize:12.5,marginBottom:3}}>{s.title}</div>
+                      <div style={{fontSize:12,color:"var(--lt)",lineHeight:1.7}}>{s.body}</div>
+                    </>
+                  )}
+                </div>
+              ))}
+              {editMode && (
+                <button className="btn btn-s btn-sm" style={{marginTop:8}} onClick={()=>setSteps(p=>[...p,{num:String(p.length+1),title:"Nuevo paso",body:"Descripción del paso..."}])}>
+                  <Ic n="plus" s={11}/>Agregar paso
+                </button>
+              )}
+            </>
+          )}
+        </div>
+
+        <div className="mf">
+          {step===1 && <><button className="btn btn-s btn-sm" onClick={onClose}>Cancelar</button><button className="btn btn-p btn-sm" onClick={()=>setStep(2)}>Continuar →</button></>}
+          {step===2 && <><button className="btn btn-s btn-sm" onClick={()=>setStep(1)}>← Atrás</button><button className="btn btn-p btn-sm" onClick={generate}>🤖 Generar con IA</button></>}
+          {step===4 && <><button className="btn btn-s btn-sm" onClick={()=>{setStep(1);setSteps([]);setDone([]);}}>Crear otro</button><button className="btn btn-p btn-sm" onClick={save}><Ic n="check" s={12}/>Publicar</button></>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+const container = document.getElementById('root');
+const reactRoot = ReactDOM.createRoot(container);
+reactRoot.render(React.createElement(App));
+  </script>
+</body>
+</html>
