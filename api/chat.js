@@ -246,6 +246,93 @@ export default async function handler(req, res) {
     }
 
     // ============================================================
+    // GENERATE TUTORIAL — llama a Claude y guarda el resultado
+    // ============================================================
+    if (action === 'generate_tutorial') {
+      if (!data || !data.topic) return res.status(400).json({ error: 'topic requerido' });
+
+      // Límites por plan
+      const PLAN_LIMITS = { free: 5, starter: 20, pro: Infinity, empresa: Infinity };
+      const userRows = await sb('GET', 'users', null, `id=eq.${session.sub}&select=plan,tutorials_this_month,month_reset_at`);
+      const user = userRows && userRows[0];
+      if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+      // Reset mensual si cambió el mes
+      const lastReset = new Date(user.month_reset_at);
+      const now = new Date();
+      if (now.getFullYear() > lastReset.getFullYear() || now.getMonth() > lastReset.getMonth()) {
+        await sb('PATCH', 'users', { tutorials_this_month: 0, month_reset_at: now.toISOString() }, `id=eq.${session.sub}`);
+        user.tutorials_this_month = 0;
+      }
+
+      const limit = PLAN_LIMITS[user.plan] || 5;
+      if (user.tutorials_this_month >= limit) {
+        return res.status(403).json({ error: `Límite del plan alcanzado (${limit}/mes). Upgradeá tu plan para continuar.` });
+      }
+
+      const topic    = clean(data.topic, 500);
+      const language = data.language || 'es';
+      const format   = data.format || 'text';
+      const langNames = { es:'español', en:'English', pt:'português', fr:'français', de:'Deutsch', it:'italiano', zh:'中文', ja:'日本語' };
+      const langLabel = langNames[language] || language;
+
+      const systemPrompt = `Sos un experto en capacitación y documentación técnica. Generás tutoriales claros, concisos y prácticos.
+SIEMPRE respondés con un JSON válido, sin texto adicional fuera del JSON, con esta estructura exacta:
+{
+  "title": "Título del tutorial (máximo 80 caracteres)",
+  "steps": [
+    { "step": 1, "title": "Título del paso", "description": "Descripción clara y práctica del paso. Incluí ejemplos concretos cuando sea útil." },
+    { "step": 2, "title": "...", "description": "..." }
+  ]
+}
+Generá entre 5 y 8 pasos. Cada descripción debe tener entre 50 y 200 palabras. El idioma de la respuesta debe ser ${langLabel}.`;
+
+      const userPrompt = `Generá un tutorial paso a paso sobre: "${topic}"`;
+
+      const aiRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_KEY,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 2000,
+          system: systemPrompt,
+          messages: [{ role: 'user', content: userPrompt }],
+        }),
+      });
+
+      const aiData = await aiRes.json();
+      if (!aiRes.ok) return res.status(500).json({ error: aiData?.error?.message || 'Error de Claude AI' });
+
+      let parsed;
+      try {
+        const rawText = aiData.content?.map(b => b.text || '').join('') || '';
+        // Extraer JSON aunque Claude agregue texto extra
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        parsed = JSON.parse(jsonMatch ? jsonMatch[0] : rawText);
+      } catch {
+        return res.status(500).json({ error: 'No se pudo parsear la respuesta de Claude' });
+      }
+
+      const tutorial = await sb('POST', 'tutorials', {
+        user_id: session.sub,
+        title: clean(parsed.title || topic, 200),
+        source_type: data.source_type || 'text',
+        language,
+        format,
+        steps: parsed.steps,
+      });
+
+      // Incrementar contador del usuario
+      await sb('PATCH', 'users', { tutorials_this_month: user.tutorials_this_month + 1 }, `id=eq.${session.sub}`);
+
+      return res.status(200).json({ tutorial: tutorial[0] });
+    }
+
+    // ============================================================
     // COMPLETIONS — quién consumió el tutorial
     // ============================================================
     if (action === 'save_completion') {
