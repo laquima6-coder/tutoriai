@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TutorAI — Resultado</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',sans-serif;background:#0f0f1a;color:#e0e0e0;min-height:100vh}
+  .top-bar{background:#1a1a2e;border-bottom:1px solid #2a2a4a;padding:14px 24px;display:flex;align-items:center;gap:16px}
+  .top-bar a{color:#aaa;text-decoration:none;font-size:.9rem}
+  .top-bar a:hover{color:#e0e0e0}
+  .top-bar-title{flex:1;font-weight:600}
+  .container{max-width:780px;margin:0 auto;padding:32px 24px}
+  /* Header */
+  .tut-header{margin-bottom:28px}
+  .tut-title{font-size:1.5rem;font-weight:800;margin-bottom:8px}
+  .tut-meta{font-size:.85rem;color:#666;display:flex;gap:12px;flex-wrap:wrap}
+  .meta-tag{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:20px;padding:3px 10px;font-size:.75rem}
+  /* Actions bar */
+  .actions{display:flex;gap:10px;margin-bottom:28px;flex-wrap:wrap}
+  .action-btn{padding:9px 16px;border-radius:8px;border:1px solid #2a2a4a;background:transparent;color:#aaa;cursor:pointer;font-size:.85rem;text-decoration:none;display:inline-flex;align-items:center;gap:6px;transition:.2s}
+  .action-btn:hover{border-color:#7c3aed;color:#e0e0e0;background:#1e1040}
+  .action-btn.primary{background:linear-gradient(135deg,#7c3aed,#2563eb);border-color:transparent;color:#fff}
+  .action-btn.whatsapp{background:#128c7e;border-color:transparent;color:#fff}
+  /* Steps */
+  .steps{display:flex;flex-direction:column;gap:16px}
+  .step{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:20px;display:flex;gap:16px;align-items:flex-start;transition:.2s}
+  .step:hover{border-color:#3a3a5a}
+  .step.done{opacity:.5;border-color:#1a1a2e}
+  .step-num{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#7c3aed,#2563eb);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem;flex-shrink:0}
+  .step.done .step-num{background:#2a2a4a;color:#555}
+  .step-body{flex:1}
+  .step-title{font-weight:600;margin-bottom:6px}
+  .step-desc{font-size:.9rem;color:#aaa;line-height:1.6}
+  .step-check{margin-left:auto;cursor:pointer;font-size:1.3rem;opacity:.4;transition:.2s;flex-shrink:0}
+  .step-check:hover{opacity:1}
+  .step.done .step-check{opacity:1}
+  /* Progress bar */
+  .prog-bar-wrap{background:#1a1a2e;border-radius:8px;height:6px;margin-bottom:24px;overflow:hidden}
+  .prog-bar{height:100%;background:linear-gradient(90deg,#7c3aed,#2563eb);transition:width .4s;border-radius:8px}
+  .prog-label{font-size:.8rem;color:#666;margin-bottom:8px}
+  /* QR Modal */
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center}
+  .modal-bg.open{display:flex}
+  .modal{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:16px;padding:32px;text-align:center;max-width:340px;width:100%}
+  .modal h3{margin-bottom:16px;font-size:1.1rem}
+  #qr-container{margin:0 auto 16px;display:inline-block}
+  .modal-link{background:#0f0f1a;border-radius:8px;padding:10px;font-size:.8rem;color:#7c3aed;word-break:break-all;margin-bottom:16px}
+  .modal-close{background:#2a2a4a;border:none;color:#aaa;padding:10px 20px;border-radius:8px;cursor:pointer;font-size:.9rem}
+  /* Loading */
+  .loading{text-align:center;padding:60px}
+  .spinner{width:48px;height:48px;border:4px solid #2a2a4a;border-top-color:#7c3aed;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media(max-width:600px){.actions{gap:6px}.action-btn{padding:8px 12px;font-size:.8rem}}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <a href="dashboard.html">← Dashboard</a>
+  <div class="top-bar-title" id="bar-title">Tutorial</div>
+  <a href="generar.html">+ Nuevo</a>
+</div>
+
+<div class="container">
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div style="color:#666">Cargando tutorial...</div>
+  </div>
+
+  <div id="content" style="display:none">
+    <div class="tut-header">
+      <div class="tut-title" id="tut-title"></div>
+      <div class="tut-meta" id="tut-meta"></div>
+    </div>
+
+    <div class="actions">
+      <button class="action-btn primary" onclick="shareWhatsApp()" id="wa-btn">💬 WhatsApp</button>
+      <button class="action-btn" onclick="showQR()">📲 QR Code</button>
+      <button class="action-btn" onclick="copyLink()">🔗 Copiar link</button>
+      <button class="action-btn" onclick="printTutorial()">🖨️ Imprimir</button>
+      <button class="action-btn" onclick="resetProgress()">↺ Reiniciar</button>
+    </div>
+
+    <div class="prog-label"><span id="prog-done">0</span> de <span id="prog-total">0</span> pasos completados</div>
+    <div class="prog-bar-wrap"><div class="prog-bar" id="prog-bar" style="width:0%"></div></div>
+
+    <div class="steps" id="steps-list"></div>
+  </div>
+</div>
+
+<!-- QR Modal -->
+<div class="modal-bg" id="qr-modal" onclick="closeQR(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3>📲 Compartir tutorial</h3>
+    <div id="qr-container"></div>
+    <div class="modal-link" id="qr-link"></div>
+    <button class="modal-close" onclick="closeQR()">Cerrar</button>
+  </div>
+</div>
+
+<script>
+const API = '/api/chat';
+const token = localStorage.getItem('tutoriai_token');
+const urlParams = new URLSearchParams(location.search);
+const tutId = urlParams.get('id');
+
+if (!tutId) window.location.href = 'dashboard.html';
+
+let tutorial = null;
+let doneSteps = new Set();
+
+const PROGRESS_KEY = 'tut_progress_' + tutId;
+
+async function load() {
+  if (!tutId) return;
+  try {
+    const r = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization': token ? 'Bearer '+token : '' },
+      body: JSON.stringify({ action:'view_tutorial', data:{ share_link: tutId, id: tutId } })
+    });
+    const d = await r.json();
+    if (!r.ok || !d.tutorial) {
+      document.getElementById('loading').innerHTML = '<div style="color:#f87171">Tutorial no encontrado</div>';
+      return;
+    }
+    tutorial = d.tutorial;
+    render();
+  } catch(e) {
+    document.getElementById('loading').innerHTML = '<div style="color:#f87171">Error de conexión</div>';
+  }
+}
+
+function render() {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('content').style.display = 'block';
+
+  const t = tutorial;
+  document.title = 'TutorAI — ' + t.title;
+  document.getElementById('bar-title').textContent = t.title;
+  document.getElementById('tut-title').textContent = t.title;
+
+  const SOURCE_LABELS = { text:'Texto', photo:'Foto', pdf:'PDF', voice:'Voz', link:'Link', video:'Video' };
+  document.getElementById('tut-meta').innerHTML = `
+    <span class="meta-tag">${new Date(t.created_at).toLocaleDateString('es-AR')}</span>
+    <span class="meta-tag">${SOURCE_LABELS[t.source_type] || t.source_type}</span>
+    <span class="meta-tag">${(t.language||'es').toUpperCase()}</span>
+    <span class="meta-tag">${t.views} vistas</span>
+  `;
+
+  // Load progress
+  try { const saved = JSON.parse(localStorage.getItem(PROGRESS_KEY)); if (Array.isArray(saved)) doneSteps = new Set(saved); } catch {}
+
+  const steps = Array.isArray(t.steps) ? t.steps : [];
+  document.getElementById('prog-total').textContent = steps.length;
+  renderSteps(steps);
+  updateProgress(steps.length);
+}
+
+function renderSteps(steps) {
+  const list = document.getElementById('steps-list');
+  list.innerHTML = steps.map((s, i) => {
+    const done = doneSteps.has(i);
+    return `<div class="step ${done?'done':''}" id="step-${i}">
+      <div class="step-num">${done ? '✓' : s.step || i+1}</div>
+      <div class="step-body">
+        <div class="step-title">${esc(s.title || '')}</div>
+        <div class="step-desc">${esc(s.description || '')}</div>
+      </div>
+      <div class="step-check" onclick="toggleStep(${i},${steps.length})" title="${done?'Marcar pendiente':'Marcar completado'}">${done?'✅':'⬜'}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleStep(i, total) {
+  if (doneSteps.has(i)) doneSteps.delete(i);
+  else doneSteps.add(i);
+  localStorage.setItem(PROGRESS_KEY, JSON.stringify([...doneSteps]));
+  const steps = Array.isArray(tutorial.steps) ? tutorial.steps : [];
+  renderSteps(steps);
+  updateProgress(total);
+}
+
+function updateProgress(total) {
+  const done = doneSteps.size;
+  document.getElementById('prog-done').textContent = done;
+  document.getElementById('prog-bar').style.width = total ? (done/total*100).toFixed(0)+'%' : '0%';
+}
+
+function resetProgress() {
+  doneSteps = new Set();
+  localStorage.removeItem(PROGRESS_KEY);
+  const steps = Array.isArray(tutorial.steps) ? tutorial.steps : [];
+  renderSteps(steps);
+  updateProgress(steps.length);
+}
+
+function getShareURL() {
+  return location.origin + '/pages/resultado.html?id=' + tutId;
+}
+
+function shareWhatsApp() {
+  const url = encodeURIComponent(getShareURL());
+  const text = encodeURIComponent('Te comparto este tutorial: ' + (tutorial?.title || '') + '\n');
+  window.open('https://wa.me/?text=' + text + url, '_blank');
+}
+
+let qrGenerated = false;
+function showQR() {
+  const shareUrl = getShareURL();
+  document.getElementById('qr-link').textContent = shareUrl;
+  if (!qrGenerated) {
+    new QRCode(document.getElementById('qr-container'), { text: shareUrl, width:180, height:180, colorDark:'#7c3aed', colorLight:'#1a1a2e' });
+    qrGenerated = true;
+  }
+  document.getElementById('qr-modal').classList.add('open');
+}
+function closeQR(e) {
+  if (!e || e.target === document.getElementById('qr-modal')) {
+    document.getElementById('qr-modal').classList.remove('open');
+  }
+}
+
+function copyLink() {
+  navigator.clipboard.writeText(getShareURL()).then(() => {
+    const btn = event.target;
+    btn.textContent = '✓ Copiado!';
+    setTimeout(() => btn.textContent = '🔗 Copiar link', 2000);
+  });
+}
+
+function printTutorial() {
+  window.print();
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/\n/g,'<br>'); }
+
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TutorAI — Iniciar sesión</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',sans-serif;background:#0f0f1a;color:#e0e0e0;min-height:100vh;display:flex;align-items:center;justify-content:center}
+  .card{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:16px;padding:40px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .logo{text-align:center;margin-bottom:32px}
+  .logo span{font-size:2rem;font-weight:800;background:linear-gradient(135deg,#7c3aed,#2563eb);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .logo p{color:#888;margin-top:6px;font-size:.9rem}
+  label{display:block;font-size:.85rem;color:#aaa;margin-bottom:6px}
+  input{width:100%;padding:12px 14px;background:#0f0f1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;font-size:1rem;outline:none;transition:.2s}
+  input:focus{border-color:#7c3aed}
+  .field{margin-bottom:18px}
+  .btn{width:100%;padding:13px;background:linear-gradient(135deg,#7c3aed,#2563eb);border:none;border-radius:8px;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;transition:.2s}
+  .btn:hover{opacity:.9}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .link{text-align:center;margin-top:20px;font-size:.9rem;color:#888}
+  .link a{color:#7c3aed;text-decoration:none}
+  .err{background:#2d1515;border:1px solid #7f1d1d;color:#f87171;padding:10px 14px;border-radius:8px;font-size:.85rem;margin-bottom:16px;display:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <span>TutorAI</span>
+    <p>Iniciá sesión en tu cuenta</p>
+  </div>
+  <div class="err" id="err"></div>
+  <div class="field">
+    <label>Email</label>
+    <input type="email" id="email" placeholder="tu@email.com" autocomplete="email">
+  </div>
+  <div class="field">
+    <label>Contraseña</label>
+    <input type="password" id="pass" placeholder="••••••••" autocomplete="current-password">
+  </div>
+  <button class="btn" id="btn" onclick="login()">Entrar</button>
+  <div class="link">¿No tenés cuenta? <a href="register.html">Registrate gratis</a></div>
+</div>
+<script>
+const API = '/api/chat';
+async function login() {
+  const email = document.getElementById('email').value.trim();
+  const pass = document.getElementById('pass').value;
+  const err = document.getElementById('err');
+  const btn = document.getElementById('btn');
+  err.style.display = 'none';
+  if (!email || !pass) { showErr('Completá todos los campos'); return; }
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  try {
+    const r = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'login', data:{ email, password:pass } }) });
+    const d = await r.json();
+    if (!r.ok) { showErr(d.error || 'Error al iniciar sesión'); return; }
+    localStorage.setItem('tutoriai_token', d.token);
+    localStorage.setItem('tutoriai_user', JSON.stringify(d.user));
+    window.location.href = 'dashboard.html';
+  } catch(e) { showErr('Error de conexión'); }
+  finally { btn.disabled = false; btn.textContent = 'Entrar'; }
+}
+function showErr(msg) {
+  const e = document.getElementById('err');
+  e.textContent = msg; e.style.display = 'block';
+}
+document.addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+// Redirect if already logged in
+if (localStorage.getItem('tutoriai_token')) window.location.href = 'dashboard.html';
+</script>
+</body>
+</html>

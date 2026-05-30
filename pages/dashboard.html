@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TutorAI — Dashboard</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',sans-serif;background:#0f0f1a;color:#e0e0e0;min-height:100vh}
+  /* Sidebar */
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:#1a1a2e;border-right:1px solid #2a2a4a;display:flex;flex-direction:column;z-index:100}
+  .sidebar-logo{padding:24px 20px 20px;font-size:1.4rem;font-weight:800;background:linear-gradient(135deg,#7c3aed,#2563eb);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .nav a{display:flex;align-items:center;gap:10px;padding:11px 20px;color:#aaa;text-decoration:none;font-size:.9rem;transition:.15s}
+  .nav a:hover,.nav a.active{background:#2a2a4a;color:#e0e0e0}
+  .nav a .ico{font-size:1.1rem;width:20px;text-align:center}
+  .sidebar-bottom{margin-top:auto;padding:16px 20px;border-top:1px solid #2a2a4a}
+  .user-info{font-size:.8rem;color:#888;margin-bottom:10px}
+  .user-info strong{display:block;color:#ccc;font-size:.9rem}
+  .plan-badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:.7rem;font-weight:600;text-transform:uppercase;background:#2a2a4a;color:#aaa}
+  .plan-badge.pro{background:#1e1040;color:#a78bfa}
+  .plan-badge.starter{background:#0f1e30;color:#60a5fa}
+  .plan-badge.empresa{background:#1a2e1a;color:#4ade80}
+  .logout-btn{background:none;border:none;color:#666;cursor:pointer;font-size:.8rem;padding:6px 0;display:block}
+  .logout-btn:hover{color:#f87171}
+  /* Main */
+  .main{margin-left:220px;padding:32px}
+  .page-title{font-size:1.4rem;font-weight:700;margin-bottom:6px}
+  .page-sub{color:#666;font-size:.9rem;margin-bottom:28px}
+  /* Stats */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:32px}
+  .stat{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:20px}
+  .stat-label{font-size:.8rem;color:#666;margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em}
+  .stat-val{font-size:2rem;font-weight:800;color:#e0e0e0}
+  .stat-sub{font-size:.75rem;color:#555;margin-top:4px}
+  /* Quick actions */
+  .section-title{font-size:1rem;font-weight:600;margin-bottom:14px;color:#ccc}
+  .quick-actions{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;margin-bottom:32px}
+  .qa-btn{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;padding:18px 14px;text-align:center;text-decoration:none;color:#e0e0e0;transition:.2s;cursor:pointer;display:block}
+  .qa-btn:hover{border-color:#7c3aed;background:#1e1040}
+  .qa-btn .icon{font-size:1.6rem;margin-bottom:8px}
+  .qa-btn .label{font-size:.82rem;color:#aaa}
+  /* Tutorial list */
+  .tut-list{display:flex;flex-direction:column;gap:10px}
+  .tut-item{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;padding:16px 18px;display:flex;align-items:center;gap:16px}
+  .tut-item:hover{border-color:#3a3a5a}
+  .tut-icon{font-size:1.5rem;flex-shrink:0}
+  .tut-info{flex:1;min-width:0}
+  .tut-title{font-size:.95rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tut-meta{font-size:.75rem;color:#666;margin-top:3px}
+  .tut-actions{display:flex;gap:8px;flex-shrink:0}
+  .tut-btn{padding:5px 12px;border-radius:6px;font-size:.78rem;cursor:pointer;border:none;text-decoration:none}
+  .tut-btn.view{background:#1e1040;color:#a78bfa}
+  .tut-btn.del{background:#2d1515;color:#f87171}
+  .empty{text-align:center;padding:40px;color:#555}
+  .empty .ico{font-size:2.5rem;margin-bottom:12px}
+  .new-btn{display:inline-block;margin-top:14px;padding:10px 20px;background:linear-gradient(135deg,#7c3aed,#2563eb);border-radius:8px;color:#fff;text-decoration:none;font-size:.9rem;font-weight:600}
+  /* Mobile */
+  .hamburger{display:none;position:fixed;top:14px;left:14px;z-index:200;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:1.2rem}
+  @media(max-width:768px){
+    .sidebar{transform:translateX(-100%);transition:.25s}.sidebar.open{transform:translateX(0)}
+    .main{margin-left:0;padding:20px}.main.shifted{margin-left:0}
+    .hamburger{display:block}
+    .page-title{margin-top:32px}
+  }
+</style>
+</head>
+<body>
+<button class="hamburger" onclick="toggleSidebar()">☰</button>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-logo">TutorAI</div>
+  <nav class="nav">
+    <a href="dashboard.html" class="active"><span class="ico">🏠</span> Dashboard</a>
+    <a href="generar.html"><span class="ico">✨</span> Generar tutorial</a>
+    <a href="scanner.html"><span class="ico">📷</span> Scanner QR</a>
+    <a href="grabador.html"><span class="ico">🎥</span> Grabador</a>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="user-info">
+      <strong id="user-name">Cargando...</strong>
+      <span id="user-email" style="display:block;margin-top:2px"></span>
+    </div>
+    <span class="plan-badge" id="plan-badge">free</span>
+    <button class="logout-btn" onclick="logout()" style="margin-top:10px">Cerrar sesión</button>
+  </div>
+</div>
+
+<div class="main" id="main">
+  <div class="page-title">Dashboard</div>
+  <div class="page-sub">Bienvenido a tu panel de tutoriales</div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">Tutoriales este mes</div>
+      <div class="stat-val" id="stat-month">—</div>
+      <div class="stat-sub" id="stat-limit">de ? disponibles</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Total generados</div>
+      <div class="stat-val" id="stat-total">—</div>
+      <div class="stat-sub">histórico</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Tu plan</div>
+      <div class="stat-val" id="stat-plan" style="font-size:1.4rem;text-transform:capitalize">—</div>
+      <div class="stat-sub"><a href="register.html" style="color:#7c3aed;text-decoration:none">Cambiar plan →</a></div>
+    </div>
+  </div>
+
+  <div class="section-title">Acciones rápidas</div>
+  <div class="quick-actions">
+    <a class="qa-btn" href="generar.html">
+      <div class="icon">📝</div>
+      <div class="label">Desde texto</div>
+    </a>
+    <a class="qa-btn" href="generar.html?modo=foto">
+      <div class="icon">📷</div>
+      <div class="label">Desde foto</div>
+    </a>
+    <a class="qa-btn" href="generar.html?modo=pdf">
+      <div class="icon">📄</div>
+      <div class="label">Desde PDF</div>
+    </a>
+    <a class="qa-btn" href="generar.html?modo=voz">
+      <div class="icon">🎤</div>
+      <div class="label">Desde voz</div>
+    </a>
+    <a class="qa-btn" href="grabador.html">
+      <div class="icon">🎥</div>
+      <div class="label">Grabar pantalla</div>
+    </a>
+    <a class="qa-btn" href="scanner.html">
+      <div class="icon">🔍</div>
+      <div class="label">Scanner QR</div>
+    </a>
+  </div>
+
+  <div class="section-title">Mis tutoriales</div>
+  <div id="tut-list" class="tut-list">
+    <div class="empty"><div class="ico">📚</div>Cargando tutoriales...</div>
+  </div>
+</div>
+
+<script>
+const API = '/api/chat';
+const token = localStorage.getItem('tutoriai_token');
+if (!token) window.location.href = 'login.html';
+
+const PLAN_LIMITS = { free:5, starter:20, pro:'∞', empresa:'∞' };
+const SOURCE_ICONS = { text:'📝', photo:'📷', pdf:'📄', voice:'🎤', link:'🔗', video:'🎥' };
+
+async function apiCall(action, data={}) {
+  const r = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({ action, data }) });
+  if (r.status === 401) { localStorage.clear(); window.location.href = 'login.html'; }
+  return r.json();
+}
+
+async function load() {
+  let user = null;
+  try { user = JSON.parse(localStorage.getItem('tutoriai_user')); } catch {}
+
+  if (user) {
+    document.getElementById('user-name').textContent = user.name || 'Usuario';
+    document.getElementById('user-email').textContent = user.email || '';
+    const badge = document.getElementById('plan-badge');
+    badge.textContent = user.plan || 'free';
+    badge.className = 'plan-badge ' + (user.plan || 'free');
+    document.getElementById('stat-plan').textContent = user.plan || 'free';
+    const lim = PLAN_LIMITS[user.plan] || 5;
+    document.getElementById('stat-month').textContent = user.tutorials_this_month ?? '—';
+    document.getElementById('stat-limit').textContent = 'de ' + lim + ' disponibles';
+  }
+
+  const d = await apiCall('get_tutorials');
+  const tutorials = d.tutorials || [];
+  document.getElementById('stat-total').textContent = tutorials.length;
+  renderTutorials(tutorials);
+}
+
+function renderTutorials(list) {
+  const el = document.getElementById('tut-list');
+  if (!list.length) {
+    el.innerHTML = `<div class="empty"><div class="ico">📚</div><div>Todavía no generaste tutoriales</div><a class="new-btn" href="generar.html">Generar mi primer tutorial</a></div>`;
+    return;
+  }
+  el.innerHTML = list.map(t => `
+    <div class="tut-item">
+      <div class="tut-icon">${SOURCE_ICONS[t.source_type] || '📝'}</div>
+      <div class="tut-info">
+        <div class="tut-title">${esc(t.title)}</div>
+        <div class="tut-meta">${new Date(t.created_at).toLocaleDateString('es-AR')} · ${t.views} vistas · ${t.language?.toUpperCase()}</div>
+      </div>
+      <div class="tut-actions">
+        <a class="tut-btn view" href="resultado.html?id=${t.id}">Ver</a>
+        <button class="tut-btn del" onclick="deleteTut('${t.id}',this)">Borrar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function deleteTut(id, btn) {
+  if (!confirm('¿Borrar este tutorial?')) return;
+  btn.disabled = true; btn.textContent = '...';
+  await apiCall('delete_tutorial', { id });
+  load();
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+function logout() { localStorage.clear(); window.location.href = 'login.html'; }
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); }
+
+load();
+</script>
+</body>
+</html>

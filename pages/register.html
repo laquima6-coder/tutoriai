@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TutorAI — Registrarse</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',sans-serif;background:#0f0f1a;color:#e0e0e0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+  .card{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:16px;padding:40px;width:100%;max-width:500px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+  .logo{text-align:center;margin-bottom:28px}
+  .logo span{font-size:1.8rem;font-weight:800;background:linear-gradient(135deg,#7c3aed,#2563eb);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .logo p{color:#888;margin-top:6px;font-size:.9rem}
+  label{display:block;font-size:.85rem;color:#aaa;margin-bottom:6px}
+  input,select{width:100%;padding:11px 14px;background:#0f0f1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;font-size:.95rem;outline:none;transition:.2s}
+  input:focus,select:focus{border-color:#7c3aed}
+  .field{margin-bottom:15px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .plans{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+  .plan{border:2px solid #2a2a4a;border-radius:10px;padding:14px;cursor:pointer;transition:.2s;position:relative}
+  .plan:hover{border-color:#7c3aed}
+  .plan.active{border-color:#7c3aed;background:#1e1040}
+  .plan-name{font-weight:700;font-size:.95rem;margin-bottom:4px}
+  .plan-price{font-size:1.2rem;font-weight:800;color:#7c3aed}
+  .plan-price span{font-size:.75rem;font-weight:400;color:#888}
+  .plan-features{font-size:.78rem;color:#888;margin-top:6px;line-height:1.5}
+  .plan-badge{position:absolute;top:-8px;right:10px;background:#7c3aed;color:#fff;font-size:.65rem;padding:2px 8px;border-radius:20px;font-weight:600}
+  .btn{width:100%;padding:13px;background:linear-gradient(135deg,#7c3aed,#2563eb);border:none;border-radius:8px;color:#fff;font-size:1rem;font-weight:600;cursor:pointer}
+  .btn:hover{opacity:.9}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .link{text-align:center;margin-top:18px;font-size:.9rem;color:#888}
+  .link a{color:#7c3aed;text-decoration:none}
+  .err{background:#2d1515;border:1px solid #7f1d1d;color:#f87171;padding:10px 14px;border-radius:8px;font-size:.85rem;margin-bottom:14px;display:none}
+  .section-title{font-size:.8rem;color:#666;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <span>TutorAI</span>
+    <p>Creá tu cuenta gratis</p>
+  </div>
+  <div class="err" id="err"></div>
+  <div class="row">
+    <div class="field">
+      <label>Nombre</label>
+      <input type="text" id="name" placeholder="Tu nombre">
+    </div>
+    <div class="field">
+      <label>Empresa (opcional)</label>
+      <input type="text" id="workspace" placeholder="Tu empresa">
+    </div>
+  </div>
+  <div class="field">
+    <label>Email</label>
+    <input type="email" id="email" placeholder="tu@email.com">
+  </div>
+  <div class="field">
+    <label>Contraseña</label>
+    <input type="password" id="pass" placeholder="Mínimo 6 caracteres">
+  </div>
+  <div class="section-title">Elegí tu plan</div>
+  <div class="plans">
+    <div class="plan active" onclick="setPlan('free')" id="plan-free">
+      <div class="plan-name">Free</div>
+      <div class="plan-price">$0 <span>/mes</span></div>
+      <div class="plan-features">5 tutoriales/mes<br>Solo texto</div>
+    </div>
+    <div class="plan" onclick="setPlan('starter')" id="plan-starter">
+      <div class="plan-name">Starter</div>
+      <div class="plan-price">$9 <span>/mes</span></div>
+      <div class="plan-features">20 tutoriales/mes<br>Voz + texto</div>
+    </div>
+    <div class="plan" onclick="setPlan('pro')" id="plan-pro">
+      <div class="plan-badge">Popular</div>
+      <div class="plan-name">Pro</div>
+      <div class="plan-price">$29 <span>/mes</span></div>
+      <div class="plan-features">Ilimitados<br>Voz + video + QR</div>
+    </div>
+    <div class="plan" onclick="setPlan('empresa')" id="plan-empresa">
+      <div class="plan-name">Empresa</div>
+      <div class="plan-price">$99 <span>/mes</span></div>
+      <div class="plan-features">Ilimitados<br>Panel de equipo</div>
+    </div>
+  </div>
+  <button class="btn" id="btn" onclick="register()">Crear cuenta</button>
+  <div class="link">¿Ya tenés cuenta? <a href="login.html">Iniciá sesión</a></div>
+</div>
+<script>
+const API = '/api/chat';
+let selectedPlan = 'free';
+function setPlan(p) {
+  selectedPlan = p;
+  document.querySelectorAll('.plan').forEach(el => el.classList.remove('active'));
+  document.getElementById('plan-' + p).classList.add('active');
+}
+async function register() {
+  const name = document.getElementById('name').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const pass = document.getElementById('pass').value;
+  const workspace = document.getElementById('workspace').value.trim();
+  const btn = document.getElementById('btn');
+  if (!name || !email || !pass) { showErr('Completá nombre, email y contraseña'); return; }
+  if (pass.length < 6) { showErr('La contraseña debe tener al menos 6 caracteres'); return; }
+  btn.disabled = true; btn.textContent = 'Creando cuenta...';
+  try {
+    const r = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'register', data:{ name, email, password:pass, plan:selectedPlan, workspace } }) });
+    const d = await r.json();
+    if (!r.ok) { showErr(d.error || 'Error al registrarse'); return; }
+    localStorage.setItem('tutoriai_token', d.token);
+    localStorage.setItem('tutoriai_user', JSON.stringify(d.user));
+    window.location.href = 'dashboard.html';
+  } catch(e) { showErr('Error de conexión'); }
+  finally { btn.disabled = false; btn.textContent = 'Crear cuenta'; }
+}
+function showErr(msg) {
+  const e = document.getElementById('err');
+  e.textContent = msg; e.style.display = 'block';
+}
+if (localStorage.getItem('tutoriai_token')) window.location.href = 'dashboard.html';
+</script>
+</body>
+</html>

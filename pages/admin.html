@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TutorAI — Admin</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',sans-serif;background:#0f0f1a;color:#e0e0e0;min-height:100vh}
+  /* PIN screen */
+  .pin-screen{display:flex;align-items:center;justify-content:center;min-height:100vh}
+  .pin-card{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:16px;padding:40px;width:100%;max-width:360px;text-align:center}
+  .pin-icon{font-size:2.5rem;margin-bottom:12px}
+  .pin-title{font-size:1.2rem;font-weight:700;margin-bottom:6px}
+  .pin-sub{color:#666;font-size:.85rem;margin-bottom:24px}
+  .pin-input{width:100%;padding:14px;background:#0f0f1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;font-size:1.5rem;text-align:center;letter-spacing:.3em;outline:none;margin-bottom:16px}
+  .pin-input:focus{border-color:#7c3aed}
+  .pin-btn{width:100%;padding:13px;background:linear-gradient(135deg,#7c3aed,#2563eb);border:none;border-radius:8px;color:#fff;font-size:1rem;font-weight:600;cursor:pointer}
+  .pin-err{color:#f87171;font-size:.85rem;margin-top:10px;display:none}
+  /* Admin layout */
+  .admin-wrap{display:none}
+  .admin-wrap.show{display:block}
+  .top-bar{background:#1a1a2e;border-bottom:1px solid #2a2a4a;padding:14px 24px;display:flex;align-items:center;gap:16px}
+  .top-bar a{color:#aaa;text-decoration:none;font-size:.9rem}
+  .top-bar-title{flex:1;font-weight:600}
+  .top-bar-badge{background:#dc2626;color:#fff;padding:2px 10px;border-radius:20px;font-size:.72rem;font-weight:600}
+  .container{padding:28px}
+  /* Stats */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:28px}
+  .stat{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:18px}
+  .stat-label{font-size:.75rem;color:#666;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px}
+  .stat-val{font-size:1.8rem;font-weight:800}
+  .stat-sub{font-size:.75rem;color:#555;margin-top:4px}
+  /* Tabs */
+  .tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap}
+  .tab{padding:8px 16px;border-radius:8px;border:1px solid #2a2a4a;background:transparent;color:#aaa;cursor:pointer;font-size:.85rem;transition:.2s}
+  .tab:hover,.tab.active{background:#1e1040;border-color:#7c3aed;color:#a78bfa}
+  .panel{display:none}.panel.active{display:block}
+  /* Table */
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.85rem}
+  th{text-align:left;padding:10px 14px;border-bottom:1px solid #2a2a4a;color:#666;font-size:.75rem;text-transform:uppercase;letter-spacing:.04em}
+  td{padding:12px 14px;border-bottom:1px solid #1e1e30;vertical-align:middle}
+  tr:hover td{background:#1e1e30}
+  .plan-badge{padding:2px 8px;border-radius:12px;font-size:.72rem;font-weight:600}
+  .plan-badge.free{background:#2a2a4a;color:#aaa}
+  .plan-badge.starter{background:#0f1e30;color:#60a5fa}
+  .plan-badge.pro{background:#1e1040;color:#a78bfa}
+  .plan-badge.empresa{background:#1a2e1a;color:#4ade80}
+  .tbl-btn{padding:4px 10px;border-radius:6px;border:none;cursor:pointer;font-size:.75rem}
+  .tbl-btn.del{background:#2d1515;color:#f87171}
+  .tbl-btn.del:hover{background:#3d1515}
+  .tbl-btn.edit{background:#1e1040;color:#a78bfa}
+  /* Search */
+  .search-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+  .search-input{flex:1;padding:9px 14px;background:#0f0f1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;font-size:.9rem;outline:none;min-width:200px}
+  .search-input:focus{border-color:#7c3aed}
+  .filter-sel{padding:9px 12px;background:#0f0f1a;border:1px solid #2a2a4a;border-radius:8px;color:#aaa;font-size:.85rem;outline:none}
+  /* Revenue */
+  .rev-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:20px}
+  .rev-card{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;padding:18px}
+  .rev-plan{font-size:.82rem;color:#666;margin-bottom:6px}
+  .rev-amt{font-size:1.5rem;font-weight:800;color:#4ade80}
+  .rev-count{font-size:.78rem;color:#555;margin-top:4px}
+  /* Edit modal */
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;align-items:center;justify-content:center}
+  .modal-bg.open{display:flex}
+  .modal{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:14px;padding:28px;width:100%;max-width:400px}
+  .modal h3{margin-bottom:20px;font-size:1rem}
+  .modal select,.modal input{width:100%;padding:10px;background:#0f0f1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;margin-bottom:14px;outline:none;font-size:.9rem}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end}
+  .modal-btn{padding:9px 18px;border-radius:7px;border:none;cursor:pointer;font-size:.88rem;font-weight:600}
+  .modal-btn.save{background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff}
+  .modal-btn.cancel{background:#2a2a4a;color:#aaa}
+  /* Loading */
+  .loading{text-align:center;padding:40px;color:#555}
+  @media(max-width:600px){.stats{grid-template-columns:1fr 1fr}.container{padding:16px}}
+</style>
+</head>
+<body>
+
+<!-- PIN Screen -->
+<div class="pin-screen" id="pin-screen">
+  <div class="pin-card">
+    <div class="pin-icon">🔐</div>
+    <div class="pin-title">Panel de administración</div>
+    <div class="pin-sub">Ingresá el PIN de admin para continuar</div>
+    <input type="password" class="pin-input" id="pin-input" maxlength="6" placeholder="••••••" onkeydown="if(event.key==='Enter')checkPin()">
+    <button class="pin-btn" onclick="checkPin()">Ingresar</button>
+    <div class="pin-err" id="pin-err">PIN incorrecto</div>
+  </div>
+</div>
+
+<!-- Admin Panel -->
+<div class="admin-wrap" id="admin-wrap">
+  <div class="top-bar">
+    <a href="dashboard.html">← App</a>
+    <div class="top-bar-title">Panel de administración</div>
+    <span class="top-bar-badge">ADMIN</span>
+    <button onclick="logout()" style="background:none;border:none;color:#666;cursor:pointer;font-size:.85rem">Salir</button>
+  </div>
+
+  <div class="container">
+    <div class="stats" id="admin-stats">
+      <div class="stat"><div class="stat-label">Total usuarios</div><div class="stat-val" id="st-users">—</div></div>
+      <div class="stat"><div class="stat-label">Tutoriales totales</div><div class="stat-val" id="st-tuts">—</div></div>
+      <div class="stat"><div class="stat-label">Revenue estimado</div><div class="stat-val" id="st-rev" style="font-size:1.3rem;color:#4ade80">—</div></div>
+      <div class="stat"><div class="stat-label">Plan Pro</div><div class="stat-val" id="st-pro">—</div><div class="stat-sub">usuarios</div></div>
+      <div class="stat"><div class="stat-label">Plan Starter</div><div class="stat-val" id="st-starter">—</div><div class="stat-sub">usuarios</div></div>
+      <div class="stat"><div class="stat-label">Plan Empresa</div><div class="stat-val" id="st-empresa">—</div><div class="stat-sub">usuarios</div></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="setTab('usuarios')">👥 Usuarios</button>
+      <button class="tab" onclick="setTab('tutoriales')">📚 Tutoriales</button>
+      <button class="tab" onclick="setTab('revenue')">💰 Revenue</button>
+    </div>
+
+    <!-- Usuarios -->
+    <div class="panel active" id="panel-usuarios">
+      <div class="search-row">
+        <input type="text" class="search-input" id="user-search" placeholder="Buscar por nombre o email..." oninput="filterUsers()">
+        <select class="filter-sel" id="plan-filter" onchange="filterUsers()">
+          <option value="">Todos los planes</option>
+          <option value="free">Free</option>
+          <option value="starter">Starter</option>
+          <option value="pro">Pro</option>
+          <option value="empresa">Empresa</option>
+        </select>
+      </div>
+      <div class="table-wrap">
+        <div class="loading" id="users-loading">Cargando usuarios...</div>
+        <table id="users-table" style="display:none">
+          <thead><tr><th>Nombre</th><th>Email</th><th>Plan</th><th>Tutoriales</th><th>Registrado</th><th>Acciones</th></tr></thead>
+          <tbody id="users-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tutoriales -->
+    <div class="panel" id="panel-tutoriales">
+      <div class="table-wrap">
+        <div class="loading" id="tuts-loading">Cargando tutoriales...</div>
+        <table id="tuts-table" style="display:none">
+          <thead><tr><th>Título</th><th>Usuario</th><th>Fuente</th><th>Idioma</th><th>Vistas</th><th>Fecha</th><th></th></tr></thead>
+          <tbody id="tuts-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Revenue -->
+    <div class="panel" id="panel-revenue">
+      <div class="rev-grid" id="rev-grid"></div>
+      <div style="color:#555;font-size:.8rem;margin-top:8px">* Revenue calculado en base a cantidad de usuarios por plan × precio mensual estimado</div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal-bg" id="edit-modal">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3>Editar usuario</h3>
+    <input type="hidden" id="edit-id">
+    <label style="font-size:.8rem;color:#666;display:block;margin-bottom:6px">Plan</label>
+    <select id="edit-plan">
+      <option value="free">Free</option>
+      <option value="starter">Starter</option>
+      <option value="pro">Pro</option>
+      <option value="empresa">Empresa</option>
+    </select>
+    <label style="font-size:.8rem;color:#666;display:block;margin-bottom:6px">Admin</label>
+    <select id="edit-admin">
+      <option value="false">No</option>
+      <option value="true">Sí</option>
+    </select>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeEdit()">Cancelar</button>
+      <button class="modal-btn save" onclick="saveEdit()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = '/api/chat';
+const ADMIN_PIN = '123456'; // Change this!
+const PIN_KEY = 'tutoriai_admin_auth';
+const token = localStorage.getItem('tutoriai_token');
+
+let allUsers = [];
+let allTutorials = [];
+
+// --- PIN ---
+function checkPin() {
+  const pin = document.getElementById('pin-input').value;
+  if (pin === ADMIN_PIN) {
+    sessionStorage.setItem(PIN_KEY, '1');
+    showAdmin();
+  } else {
+    document.getElementById('pin-err').style.display = 'block';
+    document.getElementById('pin-input').value = '';
+    document.getElementById('pin-input').focus();
+  }
+}
+
+function showAdmin() {
+  document.getElementById('pin-screen').style.display = 'none';
+  document.getElementById('admin-wrap').classList.add('show');
+  if (!token) { window.location.href = 'login.html'; return; }
+  loadAll();
+}
+
+function logout() {
+  sessionStorage.removeItem(PIN_KEY);
+  window.location.href = 'dashboard.html';
+}
+
+// --- Data ---
+async function apiCall(action, data={}) {
+  const r = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({ action, data }) });
+  if (r.status === 401) { window.location.href = 'login.html'; }
+  return r.json();
+}
+
+async function loadAll() {
+  const [ud, td] = await Promise.all([apiCall('get_users'), apiCall('get_tutorials')]);
+  allUsers = ud.users || [];
+  allTutorials = td.tutorials || [];
+  renderStats();
+  renderUsers();
+  renderTutorials();
+  renderRevenue();
+}
+
+const PLAN_PRICES = { free:0, starter:9, pro:29, empresa:99 };
+
+function renderStats() {
+  document.getElementById('st-users').textContent = allUsers.length;
+  document.getElementById('st-tuts').textContent = allTutorials.length;
+  const rev = allUsers.reduce((s,u) => s + (PLAN_PRICES[u.plan]||0), 0);
+  document.getElementById('st-rev').textContent = '$' + rev;
+  document.getElementById('st-pro').textContent = allUsers.filter(u=>u.plan==='pro').length;
+  document.getElementById('st-starter').textContent = allUsers.filter(u=>u.plan==='starter').length;
+  document.getElementById('st-empresa').textContent = allUsers.filter(u=>u.plan==='empresa').length;
+}
+
+function filterUsers() {
+  const q = document.getElementById('user-search').value.toLowerCase();
+  const plan = document.getElementById('plan-filter').value;
+  const filtered = allUsers.filter(u => {
+    const matchQ = !q || u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q);
+    const matchP = !plan || u.plan === plan;
+    return matchQ && matchP;
+  });
+  renderUsersTable(filtered);
+}
+
+function renderUsers() {
+  document.getElementById('users-loading').style.display = 'none';
+  document.getElementById('users-table').style.display = 'table';
+  renderUsersTable(allUsers);
+}
+
+function renderUsersTable(users) {
+  document.getElementById('users-body').innerHTML = users.map(u => `
+    <tr>
+      <td>${esc(u.name||'')}</td>
+      <td style="color:#888">${esc(u.email||'')}</td>
+      <td><span class="plan-badge ${u.plan}">${u.plan}</span></td>
+      <td>${u.tutorials_this_month||0}</td>
+      <td style="color:#555">${new Date(u.created_at).toLocaleDateString('es-AR')}</td>
+      <td style="display:flex;gap:6px">
+        <button class="tbl-btn edit" onclick="openEdit('${u.id}','${u.plan}','${u.is_admin}')">Editar</button>
+        <button class="tbl-btn del" onclick="deleteUser('${u.id}')">Borrar</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function renderTutorials() {
+  document.getElementById('tuts-loading').style.display = 'none';
+  document.getElementById('tuts-table').style.display = 'table';
+  const usersMap = Object.fromEntries(allUsers.map(u=>[u.id,u.email]));
+  document.getElementById('tuts-body').innerHTML = allTutorials.map(t => `
+    <tr>
+      <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.title||'')}</td>
+      <td style="color:#888;font-size:.8rem">${esc(usersMap[t.user_id]||'—')}</td>
+      <td>${t.source_type||'text'}</td>
+      <td>${(t.language||'es').toUpperCase()}</td>
+      <td>${t.views||0}</td>
+      <td style="color:#555">${new Date(t.created_at).toLocaleDateString('es-AR')}</td>
+      <td><button class="tbl-btn del" onclick="deleteTutorial('${t.id}')">Borrar</button></td>
+    </tr>
+  `).join('');
+}
+
+function renderRevenue() {
+  const plans = ['free','starter','pro','empresa'];
+  const revGrid = document.getElementById('rev-grid');
+  revGrid.innerHTML = plans.map(p => {
+    const count = allUsers.filter(u=>u.plan===p).length;
+    const rev = count * PLAN_PRICES[p];
+    return `<div class="rev-card">
+      <div class="rev-plan">${p.charAt(0).toUpperCase()+p.slice(1)} (${count} usuarios)</div>
+      <div class="rev-amt">$${rev}/mes</div>
+      <div class="rev-count">$${PLAN_PRICES[p]}/usuario</div>
+    </div>`;
+  }).join('');
+}
+
+// --- Actions ---
+function openEdit(id, plan, isAdmin) {
+  document.getElementById('edit-id').value = id;
+  document.getElementById('edit-plan').value = plan;
+  document.getElementById('edit-admin').value = String(isAdmin);
+  document.getElementById('edit-modal').classList.add('open');
+}
+function closeEdit() { document.getElementById('edit-modal').classList.remove('open'); }
+
+async function saveEdit() {
+  const id = document.getElementById('edit-id').value;
+  const plan = document.getElementById('edit-plan').value;
+  const is_admin = document.getElementById('edit-admin').value === 'true';
+  await apiCall('update_user', { id, plan, is_admin });
+  closeEdit();
+  loadAll();
+}
+
+async function deleteUser(id) {
+  if (!confirm('¿Borrar este usuario? Esto eliminará todos sus tutoriales.')) return;
+  await apiCall('delete_user', { id });
+  loadAll();
+}
+
+async function deleteTutorial(id) {
+  if (!confirm('¿Borrar este tutorial?')) return;
+  await apiCall('delete_tutorial', { id });
+  loadAll();
+}
+
+function setTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['usuarios','tutoriales','revenue'][i] === tab);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+// Init
+if (sessionStorage.getItem(PIN_KEY) === '1') showAdmin();
+</script>
+</body>
+</html>

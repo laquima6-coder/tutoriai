@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TutorAI — Generar tutorial</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',sans-serif;background:#0f0f1a;color:#e0e0e0;min-height:100vh}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;width:220px;background:#1a1a2e;border-right:1px solid #2a2a4a;display:flex;flex-direction:column;z-index:100}
+  .sidebar-logo{padding:24px 20px 20px;font-size:1.4rem;font-weight:800;background:linear-gradient(135deg,#7c3aed,#2563eb);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+  .nav a{display:flex;align-items:center;gap:10px;padding:11px 20px;color:#aaa;text-decoration:none;font-size:.9rem;transition:.15s}
+  .nav a:hover,.nav a.active{background:#2a2a4a;color:#e0e0e0}
+  .nav a .ico{font-size:1.1rem;width:20px;text-align:center}
+  .main{margin-left:220px;padding:32px}
+  .page-title{font-size:1.4rem;font-weight:700;margin-bottom:6px}
+  .page-sub{color:#666;font-size:.9rem;margin-bottom:28px}
+  /* Tabs */
+  .tabs{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap}
+  .tab{padding:9px 16px;border-radius:8px;border:1px solid #2a2a4a;background:transparent;color:#aaa;cursor:pointer;font-size:.85rem;transition:.2s}
+  .tab:hover{border-color:#7c3aed;color:#e0e0e0}
+  .tab.active{background:#1e1040;border-color:#7c3aed;color:#a78bfa}
+  /* Panels */
+  .panel{display:none}
+  .panel.active{display:block}
+  /* Form */
+  label{display:block;font-size:.85rem;color:#aaa;margin-bottom:6px}
+  textarea,input,select{width:100%;padding:11px 14px;background:#0f0f1a;border:1px solid #2a2a4a;border-radius:8px;color:#e0e0e0;font-size:.95rem;outline:none;transition:.2s;font-family:inherit}
+  textarea:focus,input:focus,select:focus{border-color:#7c3aed}
+  textarea{resize:vertical;min-height:120px}
+  .field{margin-bottom:16px}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .btn{padding:13px 24px;background:linear-gradient(135deg,#7c3aed,#2563eb);border:none;border-radius:8px;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;transition:.2s}
+  .btn:hover{opacity:.9}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn-outline{padding:10px 18px;background:transparent;border:1px solid #2a2a4a;border-radius:8px;color:#aaa;font-size:.9rem;cursor:pointer}
+  .btn-outline:hover{border-color:#7c3aed;color:#e0e0e0}
+  /* Upload area */
+  .upload-area{border:2px dashed #2a2a4a;border-radius:12px;padding:40px;text-align:center;cursor:pointer;transition:.2s}
+  .upload-area:hover,.upload-area.drag{border-color:#7c3aed;background:#1e1040}
+  .upload-icon{font-size:2.5rem;margin-bottom:10px}
+  .upload-label{font-size:.9rem;color:#888}
+  .upload-label span{color:#7c3aed}
+  /* Recording */
+  .rec-area{text-align:center;padding:30px}
+  .rec-btn{width:80px;height:80px;border-radius:50%;border:none;cursor:pointer;font-size:2rem;transition:.2s;margin:0 auto;display:block}
+  .rec-btn.idle{background:#2a2a4a;color:#aaa}
+  .rec-btn.recording{background:#dc2626;animation:pulse 1s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.5)}50%{box-shadow:0 0 0 14px rgba(220,38,38,0)}}
+  .rec-status{margin-top:14px;font-size:.9rem;color:#888}
+  .rec-timer{font-size:2rem;font-weight:700;color:#e0e0e0;margin:10px 0}
+  /* Progress */
+  .progress-wrap{display:none;text-align:center;padding:30px 0}
+  .progress-wrap.active{display:block}
+  .spinner{width:48px;height:48px;border:4px solid #2a2a4a;border-top-color:#7c3aed;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .progress-text{color:#888;font-size:.95rem}
+  .progress-steps{margin-top:12px;font-size:.8rem;color:#555}
+  /* Error */
+  .err{background:#2d1515;border:1px solid #7f1d1d;color:#f87171;padding:10px 14px;border-radius:8px;font-size:.85rem;margin-top:16px;display:none}
+  /* Limit warning */
+  .limit-warn{background:#1a1a00;border:1px solid #7c6d00;color:#fcd34d;padding:12px 16px;border-radius:8px;font-size:.85rem;margin-bottom:20px;display:none}
+  .hamburger{display:none;position:fixed;top:14px;left:14px;z-index:200;background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;padding:8px 10px;cursor:pointer;font-size:1.2rem}
+  @media(max-width:768px){
+    .sidebar{transform:translateX(-100%);transition:.25s}.sidebar.open{transform:translateX(0)}
+    .main{margin-left:0;padding:20px}
+    .hamburger{display:block}
+    .page-title{margin-top:32px}
+    .row{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<button class="hamburger" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-logo">TutorAI</div>
+  <nav class="nav">
+    <a href="dashboard.html"><span class="ico">🏠</span> Dashboard</a>
+    <a href="generar.html" class="active"><span class="ico">✨</span> Generar tutorial</a>
+    <a href="scanner.html"><span class="ico">📷</span> Scanner QR</a>
+    <a href="grabador.html"><span class="ico">🎥</span> Grabador</a>
+  </nav>
+</div>
+
+<div class="main">
+  <div class="page-title">Generar tutorial</div>
+  <div class="page-sub">Creá un tutorial paso a paso con IA</div>
+
+  <div class="limit-warn" id="limit-warn">
+    <strong>⚠️ Límite de plan alcanzado.</strong> <a href="register.html" style="color:#fcd34d">Upgradeá tu plan →</a>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="setTab('texto')">📝 Texto</button>
+    <button class="tab" onclick="setTab('foto')">📷 Foto</button>
+    <button class="tab" onclick="setTab('pdf')">📄 PDF</button>
+    <button class="tab" onclick="setTab('voz')">🎤 Voz</button>
+    <button class="tab" onclick="setTab('link')">🔗 Link</button>
+  </div>
+
+  <!-- Texto -->
+  <div class="panel active" id="panel-texto">
+    <div class="field">
+      <label>¿Sobre qué querés el tutorial?</label>
+      <textarea id="topic-texto" placeholder="Ej: Cómo hacer una copia de seguridad en Windows 11, cómo usar Excel para principiantes, pasos para instalar Node.js..."></textarea>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Idioma</label>
+        <select id="lang-texto">
+          <option value="es">Español</option>
+          <option value="en">English</option>
+          <option value="pt">Português</option>
+          <option value="fr">Français</option>
+          <option value="de">Deutsch</option>
+          <option value="it">Italiano</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Formato</label>
+        <select id="format-texto">
+          <option value="text">Solo texto</option>
+          <option value="voice">Con audio (próximamente)</option>
+          <option value="video">Con video (próximamente)</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn" id="btn-texto" onclick="generate('texto')">✨ Generar tutorial</button>
+  </div>
+
+  <!-- Foto -->
+  <div class="panel" id="panel-foto">
+    <div class="field">
+      <div class="upload-area" id="foto-drop" onclick="document.getElementById('foto-input').click()" ondragover="e=>e.preventDefault()" ondrop="handleDrop(event,'foto')">
+        <div class="upload-icon">📷</div>
+        <div class="upload-label">Arrastrá una foto o <span>hacé click para subir</span></div>
+        <div id="foto-name" style="margin-top:10px;font-size:.8rem;color:#666"></div>
+      </div>
+      <input type="file" id="foto-input" accept="image/*" style="display:none" onchange="handleFile(this,'foto')">
+    </div>
+    <div class="field">
+      <label>¿Qué querés aprender de esta imagen?</label>
+      <input type="text" id="topic-foto" placeholder="Ej: Cómo usar este panel de control">
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Idioma</label>
+        <select id="lang-foto">
+          <option value="es">Español</option>
+          <option value="en">English</option>
+          <option value="pt">Português</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn" id="btn-foto" onclick="generate('foto')">✨ Generar tutorial</button>
+  </div>
+
+  <!-- PDF -->
+  <div class="panel" id="panel-pdf">
+    <div class="field">
+      <div class="upload-area" id="pdf-drop" onclick="document.getElementById('pdf-input').click()">
+        <div class="upload-icon">📄</div>
+        <div class="upload-label">Arrastrá un PDF o <span>hacé click para subir</span></div>
+        <div id="pdf-name" style="margin-top:10px;font-size:.8rem;color:#666"></div>
+      </div>
+      <input type="file" id="pdf-input" accept=".pdf" style="display:none" onchange="handleFile(this,'pdf')">
+    </div>
+    <div class="field">
+      <label>¿Sobre qué parte querés el tutorial? (opcional)</label>
+      <input type="text" id="topic-pdf" placeholder="Ej: Los primeros 3 capítulos, el proceso de onboarding...">
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Idioma</label>
+        <select id="lang-pdf">
+          <option value="es">Español</option>
+          <option value="en">English</option>
+          <option value="pt">Português</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn" id="btn-pdf" onclick="generate('pdf')">✨ Generar tutorial</button>
+  </div>
+
+  <!-- Voz -->
+  <div class="panel" id="panel-voz">
+    <div class="rec-area">
+      <button class="rec-btn idle" id="rec-btn" onclick="toggleRecording()">🎤</button>
+      <div class="rec-timer" id="rec-timer" style="display:none">00:00</div>
+      <div class="rec-status" id="rec-status">Presioná el micrófono para grabar</div>
+      <div id="audio-preview" style="margin-top:16px;display:none">
+        <audio id="audio-player" controls style="width:100%;border-radius:8px"></audio>
+      </div>
+    </div>
+    <div class="field" style="margin-top:8px">
+      <label>Idioma del tutorial</label>
+      <select id="lang-voz">
+        <option value="es">Español</option>
+        <option value="en">English</option>
+        <option value="pt">Português</option>
+      </select>
+    </div>
+    <button class="btn" id="btn-voz" onclick="generate('voz')" disabled>✨ Generar tutorial</button>
+  </div>
+
+  <!-- Link -->
+  <div class="panel" id="panel-link">
+    <div class="field">
+      <label>URL del contenido</label>
+      <input type="url" id="topic-link" placeholder="https://ejemplo.com/articulo o https://youtube.com/watch?v=...">
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Idioma</label>
+        <select id="lang-link">
+          <option value="es">Español</option>
+          <option value="en">English</option>
+          <option value="pt">Português</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn" id="btn-link" onclick="generate('link')">✨ Generar tutorial</button>
+  </div>
+
+  <div class="progress-wrap" id="progress">
+    <div class="spinner"></div>
+    <div class="progress-text">Claude está generando tu tutorial...</div>
+    <div class="progress-steps">Analizando el tema · Creando pasos · Optimizando contenido</div>
+  </div>
+  <div class="err" id="err"></div>
+</div>
+
+<script>
+const API = '/api/chat';
+const token = localStorage.getItem('tutoriai_token');
+if (!token) window.location.href = 'login.html';
+
+let currentTab = 'texto';
+let mediaRecorder = null;
+let audioChunks = [];
+let recordingInterval = null;
+let recordingSeconds = 0;
+let audioBlob = null;
+let uploadedFiles = {};
+
+// Check URL params for tab
+const urlParams = new URLSearchParams(location.search);
+const modoParam = urlParams.get('modo');
+if (modoParam && ['foto','pdf','voz','link'].includes(modoParam)) {
+  setTab(modoParam);
+}
+
+function setTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach((t,i) => {
+    t.classList.toggle('active', ['texto','foto','pdf','voz','link'][i] === tab);
+  });
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+  document.getElementById('err').style.display = 'none';
+  document.getElementById('progress').classList.remove('active');
+}
+
+function handleFile(input, type) {
+  const file = input.files[0];
+  if (!file) return;
+  uploadedFiles[type] = file;
+  document.getElementById(type + '-name').textContent = file.name + ' (' + (file.size/1024).toFixed(0) + ' KB)';
+}
+
+function handleDrop(e, type) {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  uploadedFiles[type] = file;
+  document.getElementById(type + '-name').textContent = file.name;
+}
+
+async function toggleRecording() {
+  const btn = document.getElementById('rec-btn');
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+    clearInterval(recordingInterval);
+    btn.className = 'rec-btn idle'; btn.textContent = '🎤';
+    document.getElementById('rec-status').textContent = 'Grabación guardada. Podés generar el tutorial.';
+    document.getElementById('rec-timer').style.display = 'none';
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioChunks = [];
+    mediaRecorder = new MediaRecorder(stream);
+    mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+    mediaRecorder.onstop = () => {
+      audioBlob = new Blob(audioChunks, { type:'audio/webm' });
+      const url = URL.createObjectURL(audioBlob);
+      document.getElementById('audio-player').src = url;
+      document.getElementById('audio-preview').style.display = 'block';
+      document.getElementById('btn-voz').disabled = false;
+      stream.getTracks().forEach(t => t.stop());
+    };
+    mediaRecorder.start();
+    btn.className = 'rec-btn recording'; btn.textContent = '⏹';
+    document.getElementById('rec-status').textContent = 'Grabando... Hablá sobre lo que querés documentar.';
+    document.getElementById('rec-timer').style.display = 'block';
+    recordingSeconds = 0;
+    recordingInterval = setInterval(() => {
+      recordingSeconds++;
+      const m = String(Math.floor(recordingSeconds/60)).padStart(2,'0');
+      const s = String(recordingSeconds%60).padStart(2,'0');
+      document.getElementById('rec-timer').textContent = m + ':' + s;
+    }, 1000);
+  } catch (e) {
+    showErr('No se pudo acceder al micrófono: ' + e.message);
+  }
+}
+
+async function generate(tab) {
+  const btn = document.getElementById('btn-' + tab);
+  const errEl = document.getElementById('err');
+  const progress = document.getElementById('progress');
+  errEl.style.display = 'none';
+
+  let topic = '';
+  let lang = 'es';
+  let source_type = 'text';
+
+  if (tab === 'texto') {
+    topic = document.getElementById('topic-texto').value.trim();
+    lang = document.getElementById('lang-texto').value;
+    if (!topic) { showErr('Escribí el tema del tutorial'); return; }
+  } else if (tab === 'foto') {
+    topic = document.getElementById('topic-foto').value.trim() || 'Explicar esta imagen';
+    lang = document.getElementById('lang-foto').value;
+    source_type = 'photo';
+    if (!uploadedFiles.foto) { showErr('Subí una foto primero'); return; }
+  } else if (tab === 'pdf') {
+    topic = document.getElementById('topic-pdf').value.trim() || 'Resumir este PDF en pasos';
+    lang = document.getElementById('lang-pdf').value;
+    source_type = 'pdf';
+    if (!uploadedFiles.pdf) { showErr('Subí un PDF primero'); return; }
+  } else if (tab === 'voz') {
+    if (!audioBlob) { showErr('Grabá un audio primero'); return; }
+    lang = document.getElementById('lang-voz').value;
+    source_type = 'voice';
+    topic = 'Tutorial desde grabación de voz';
+  } else if (tab === 'link') {
+    topic = document.getElementById('topic-link').value.trim();
+    lang = document.getElementById('lang-link').value;
+    source_type = 'link';
+    if (!topic) { showErr('Ingresá una URL'); return; }
+  }
+
+  btn.disabled = true;
+  progress.classList.add('active');
+  progress.style.display = 'block';
+
+  try {
+    const r = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
+      body: JSON.stringify({ action:'generate_tutorial', data:{ topic, language:lang, format:'text', source_type } })
+    });
+    const d = await r.json();
+    progress.classList.remove('active');
+    progress.style.display = 'none';
+    if (r.status === 403) {
+      document.getElementById('limit-warn').style.display = 'block';
+      showErr(d.error || 'Límite alcanzado');
+      return;
+    }
+    if (!r.ok) { showErr(d.error || 'Error al generar'); return; }
+    if (d.tutorial?.id) {
+      window.location.href = 'resultado.html?id=' + d.tutorial.id;
+    }
+  } catch(e) {
+    progress.classList.remove('active');
+    progress.style.display = 'none';
+    showErr('Error de conexión: ' + e.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function showErr(msg) {
+  const e = document.getElementById('err');
+  e.textContent = msg; e.style.display = 'block';
+}
+</script>
+</body>
+</html>

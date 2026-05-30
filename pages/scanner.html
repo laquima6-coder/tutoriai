@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TutorAI — Scanner QR</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',sans-serif;background:#0f0f1a;color:#e0e0e0;min-height:100vh}
+  .top-bar{background:#1a1a2e;border-bottom:1px solid #2a2a4a;padding:14px 24px;display:flex;align-items:center;gap:16px}
+  .top-bar a{color:#aaa;text-decoration:none;font-size:.9rem}
+  .top-bar a:hover{color:#e0e0e0}
+  .top-bar-title{flex:1;font-weight:600}
+  .container{max-width:560px;margin:0 auto;padding:32px 20px}
+  .page-title{font-size:1.3rem;font-weight:700;margin-bottom:6px}
+  .page-sub{color:#666;font-size:.9rem;margin-bottom:24px}
+  /* Scanner */
+  .scanner-wrap{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:14px;overflow:hidden;margin-bottom:20px}
+  #qr-reader{width:100%}
+  #qr-reader video{border-radius:0 !important}
+  .scanner-controls{padding:16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .ctrl-btn{padding:10px 18px;border-radius:8px;border:1px solid #2a2a4a;background:transparent;color:#aaa;cursor:pointer;font-size:.85rem;transition:.2s;display:flex;align-items:center;gap:6px}
+  .ctrl-btn:hover{border-color:#7c3aed;color:#e0e0e0}
+  .ctrl-btn.active{background:#1e1040;border-color:#7c3aed;color:#a78bfa}
+  .ctrl-btn.danger{border-color:#7f1d1d;color:#f87171}
+  .ctrl-btn.danger:hover{background:#2d1515}
+  /* Result */
+  .result-box{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:20px;margin-bottom:16px;display:none}
+  .result-box.show{display:block}
+  .result-label{font-size:.75rem;color:#666;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+  .result-text{font-size:1rem;word-break:break-all;color:#a78bfa;margin-bottom:12px}
+  .result-actions{display:flex;gap:8px;flex-wrap:wrap}
+  .res-btn{padding:8px 14px;border-radius:7px;border:none;cursor:pointer;font-size:.82rem;font-weight:600}
+  .res-btn.open{background:#1e1040;color:#a78bfa}
+  .res-btn.copy{background:#2a2a4a;color:#ccc}
+  .res-btn.tutorial{background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff}
+  /* History */
+  .history-title{font-size:.85rem;color:#666;text-transform:uppercase;letter-spacing:.05em;margin:20px 0 10px}
+  .history-list{display:flex;flex-direction:column;gap:8px}
+  .hist-item{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px;cursor:pointer}
+  .hist-item:hover{border-color:#3a3a5a}
+  .hist-ico{font-size:1.1rem}
+  .hist-text{flex:1;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#aaa}
+  .hist-time{font-size:.75rem;color:#555}
+  .hist-del{background:none;border:none;color:#555;cursor:pointer;font-size:1rem;padding:2px 6px}
+  .hist-del:hover{color:#f87171}
+  .empty-hist{color:#555;font-size:.85rem;text-align:center;padding:20px}
+  /* Status */
+  .status{text-align:center;padding:14px;font-size:.85rem;color:#666}
+  .status.scanning{color:#7c3aed}
+  .status.success{color:#4ade80}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <a href="dashboard.html">← Dashboard</a>
+  <div class="top-bar-title">Scanner QR / Códigos de barra</div>
+</div>
+
+<div class="container">
+  <div class="page-title">📷 Scanner</div>
+  <div class="page-sub">Escaneá códigos QR y de barras con la cámara</div>
+
+  <div class="scanner-wrap">
+    <div id="qr-reader"></div>
+    <div class="status scanning" id="scan-status">Iniciando cámara...</div>
+    <div class="scanner-controls">
+      <button class="ctrl-btn" id="torch-btn" onclick="toggleTorch()" style="display:none">🔦 Linterna</button>
+      <button class="ctrl-btn" onclick="flipCamera()">🔄 Cambiar cámara</button>
+      <button class="ctrl-btn danger" onclick="stopScanner()">⏹ Detener</button>
+    </div>
+  </div>
+
+  <div class="result-box" id="result-box">
+    <div class="result-label">Resultado escaneado</div>
+    <div class="result-text" id="result-text"></div>
+    <div class="result-actions">
+      <button class="res-btn open" id="open-btn" onclick="openResult()" style="display:none">🔗 Abrir link</button>
+      <button class="res-btn copy" onclick="copyResult()">📋 Copiar</button>
+      <button class="res-btn tutorial" onclick="makeTutorial()">✨ Hacer tutorial</button>
+    </div>
+  </div>
+
+  <div class="history-title">Historial</div>
+  <div class="history-list" id="history-list"></div>
+</div>
+
+<script>
+const HISTORY_KEY = 'tutoriai_qr_history';
+let html5QrCode = null;
+let currentCamera = 'environment';
+let torchOn = false;
+let lastResult = '';
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch { return []; }
+}
+function saveHistory(h) { localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(0,20))); }
+
+function addToHistory(text) {
+  const h = getHistory();
+  const existing = h.findIndex(i => i.text === text);
+  if (existing > -1) h.splice(existing,1);
+  h.unshift({ text, time: Date.now() });
+  saveHistory(h);
+  renderHistory();
+}
+
+function renderHistory() {
+  const list = document.getElementById('history-list');
+  const h = getHistory();
+  if (!h.length) { list.innerHTML = '<div class="empty-hist">Sin historial todavía</div>'; return; }
+  list.innerHTML = h.map((item,i) => {
+    const isUrl = /^https?:\/\//i.test(item.text);
+    const ico = isUrl ? '🔗' : item.text.length < 20 ? '🏷️' : '📄';
+    const t = new Date(item.time).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+    return `<div class="hist-item" onclick="selectResult('${esc(item.text)}')">
+      <span class="hist-ico">${ico}</span>
+      <span class="hist-text">${esc(item.text)}</span>
+      <span class="hist-time">${t}</span>
+      <button class="hist-del" onclick="event.stopPropagation();deleteHist(${i})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function deleteHist(i) {
+  const h = getHistory(); h.splice(i,1); saveHistory(h); renderHistory();
+}
+
+function selectResult(text) {
+  showResult(text);
+}
+
+function showResult(text) {
+  lastResult = text;
+  document.getElementById('result-text').textContent = text;
+  document.getElementById('result-box').classList.add('show');
+  const isUrl = /^https?:\/\//i.test(text);
+  document.getElementById('open-btn').style.display = isUrl ? 'inline-block' : 'none';
+  document.getElementById('scan-status').textContent = '✓ Código detectado';
+  document.getElementById('scan-status').className = 'status success';
+}
+
+function onScanSuccess(decodedText) {
+  if (decodedText === lastResult) return;
+  showResult(decodedText);
+  addToHistory(decodedText);
+  // Vibrate if supported
+  if (navigator.vibrate) navigator.vibrate(100);
+}
+
+function openResult() {
+  if (/^https?:\/\//i.test(lastResult)) window.open(lastResult, '_blank');
+}
+
+function copyResult() {
+  navigator.clipboard.writeText(lastResult).then(() => {
+    const btn = event.target;
+    btn.textContent = '✓ Copiado';
+    setTimeout(() => btn.textContent = '📋 Copiar', 2000);
+  });
+}
+
+function makeTutorial() {
+  if (!lastResult) return;
+  localStorage.setItem('tutoriai_prefill', lastResult);
+  window.location.href = 'generar.html';
+}
+
+async function startScanner() {
+  const config = { fps:10, qrbox:{width:250,height:250}, aspectRatio:1, facingMode: currentCamera };
+  html5QrCode = new Html5Qrcode('qr-reader');
+  try {
+    await html5QrCode.start({ facingMode: currentCamera }, config, onScanSuccess);
+    document.getElementById('scan-status').textContent = 'Apuntá la cámara al código';
+    document.getElementById('scan-status').className = 'status scanning';
+    // Check torch support
+    const track = html5QrCode.getRunningTrackCapabilities?.();
+    if (track?.torch !== undefined) document.getElementById('torch-btn').style.display = 'inline-flex';
+  } catch(e) {
+    document.getElementById('scan-status').textContent = 'No se pudo acceder a la cámara: ' + e;
+    document.getElementById('scan-status').className = 'status';
+  }
+}
+
+async function stopScanner() {
+  if (html5QrCode) {
+    try { await html5QrCode.stop(); } catch {}
+    document.getElementById('scan-status').textContent = 'Escáner detenido';
+    document.getElementById('scan-status').className = 'status';
+  }
+}
+
+async function flipCamera() {
+  await stopScanner();
+  currentCamera = currentCamera === 'environment' ? 'user' : 'environment';
+  await startScanner();
+}
+
+async function toggleTorch() {
+  if (!html5QrCode) return;
+  try {
+    torchOn = !torchOn;
+    await html5QrCode.applyVideoConstraints({ advanced:[{torch:torchOn}] });
+    document.getElementById('torch-btn').classList.toggle('active', torchOn);
+    document.getElementById('torch-btn').textContent = torchOn ? '🔦 Linterna ON' : '🔦 Linterna';
+  } catch(e) { console.log('Torch not supported'); }
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+
+renderHistory();
+startScanner();
+</script>
+</body>
+</html>

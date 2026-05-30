@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TutorAI — Grabador de pantalla</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',sans-serif;background:#0f0f1a;color:#e0e0e0;min-height:100vh}
+  .top-bar{background:#1a1a2e;border-bottom:1px solid #2a2a4a;padding:14px 24px;display:flex;align-items:center;gap:16px}
+  .top-bar a{color:#aaa;text-decoration:none;font-size:.9rem}
+  .top-bar a:hover{color:#e0e0e0}
+  .top-bar-title{flex:1;font-weight:600}
+  .container{max-width:700px;margin:0 auto;padding:32px 20px}
+  .page-title{font-size:1.3rem;font-weight:700;margin-bottom:6px}
+  .page-sub{color:#666;font-size:.9rem;margin-bottom:28px}
+  /* Recorder */
+  .rec-card{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:14px;padding:28px;margin-bottom:20px;text-align:center}
+  .rec-big-btn{width:90px;height:90px;border-radius:50%;border:none;cursor:pointer;font-size:2.2rem;transition:.2s;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px}
+  .rec-big-btn.idle{background:#2a2a4a;color:#aaa}
+  .rec-big-btn.idle:hover{background:#3a3a5a}
+  .rec-big-btn.recording{background:#dc2626;animation:pulse 1.2s infinite}
+  .rec-big-btn.paused{background:#d97706}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4)}60%{box-shadow:0 0 0 18px rgba(220,38,38,0)}}
+  .rec-timer{font-size:2.2rem;font-weight:700;letter-spacing:.06em;margin-bottom:6px;font-variant-numeric:tabular-nums}
+  .rec-status{font-size:.85rem;color:#666;margin-bottom:18px}
+  .rec-controls{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+  .ctrl-btn{padding:10px 18px;border-radius:8px;border:1px solid #2a2a4a;background:transparent;color:#aaa;cursor:pointer;font-size:.85rem;transition:.2s}
+  .ctrl-btn:hover{border-color:#7c3aed;color:#e0e0e0}
+  .ctrl-btn:disabled{opacity:.3;cursor:not-allowed}
+  .ctrl-btn.danger{border-color:#7f1d1d;color:#f87171}
+  .ctrl-btn.danger:hover{background:#2d1515}
+  /* Options */
+  .options{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+  .opt-card{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:10px;padding:14px}
+  .opt-label{font-size:.8rem;color:#666;margin-bottom:8px}
+  select,input[type=range]{width:100%;background:#0f0f1a;border:1px solid #2a2a4a;border-radius:6px;color:#e0e0e0;padding:7px 10px;font-size:.85rem;outline:none}
+  select:focus{border-color:#7c3aed}
+  /* Preview */
+  .preview-card{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;overflow:hidden;margin-bottom:16px;display:none}
+  .preview-card.show{display:block}
+  video{width:100%;display:block;background:#000;max-height:320px}
+  .preview-actions{padding:14px;display:flex;gap:10px;flex-wrap:wrap}
+  .act-btn{padding:9px 16px;border-radius:8px;border:none;cursor:pointer;font-size:.85rem;font-weight:600;display:flex;align-items:center;gap:6px}
+  .act-btn.download{background:#1e1040;color:#a78bfa}
+  .act-btn.tutorial{background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff}
+  /* Upload */
+  .upload-card{background:#1a1a2e;border:1px solid #2a2a4a;border-radius:12px;padding:24px;margin-bottom:16px}
+  .upload-title{font-size:.95rem;font-weight:600;margin-bottom:14px;color:#ccc}
+  .upload-area{border:2px dashed #2a2a4a;border-radius:10px;padding:32px;text-align:center;cursor:pointer;transition:.2s}
+  .upload-area:hover{border-color:#7c3aed;background:#1e1040}
+  .upload-icon{font-size:2rem;margin-bottom:8px}
+  .upload-hint{font-size:.82rem;color:#666}
+  .upload-hint span{color:#7c3aed}
+  .file-preview{margin-top:12px;display:none}
+  /* Info */
+  .info-box{background:#1a1a00;border:1px solid #3a3000;border-radius:8px;padding:12px 14px;font-size:.82rem;color:#d4b843;margin-bottom:16px;line-height:1.6}
+  @media(max-width:600px){.options{grid-template-columns:1fr}.rec-big-btn{width:72px;height:72px;font-size:1.8rem}}
+</style>
+</head>
+<body>
+<div class="top-bar">
+  <a href="dashboard.html">← Dashboard</a>
+  <div class="top-bar-title">🎥 Grabador de pantalla</div>
+</div>
+
+<div class="container">
+  <div class="page-title">Grabador de pantalla</div>
+  <div class="page-sub">Grabá tu pantalla y generá un tutorial automáticamente</div>
+
+  <div class="info-box">
+    💡 El navegador te va a pedir permiso para compartir tu pantalla. Podés elegir grabar toda la pantalla, una ventana específica o una pestaña.
+  </div>
+
+  <div class="options">
+    <div class="opt-card">
+      <div class="opt-label">Incluir audio del sistema</div>
+      <select id="audio-opt">
+        <option value="system">Audio del sistema</option>
+        <option value="mic">Micrófono</option>
+        <option value="both">Ambos</option>
+        <option value="none">Sin audio</option>
+      </select>
+    </div>
+    <div class="opt-card">
+      <div class="opt-label">Calidad de video</div>
+      <select id="quality-opt">
+        <option value="high">Alta (1080p)</option>
+        <option value="medium" selected>Media (720p)</option>
+        <option value="low">Baja (480p)</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="rec-card">
+    <button class="rec-big-btn idle" id="rec-btn" onclick="toggleRecording()">🎥</button>
+    <div class="rec-timer" id="rec-timer">00:00</div>
+    <div class="rec-status" id="rec-status">Listo para grabar</div>
+    <div class="rec-controls">
+      <button class="ctrl-btn" id="pause-btn" onclick="togglePause()" disabled>⏸ Pausar</button>
+      <button class="ctrl-btn danger" id="stop-btn" onclick="stopRecording()" disabled>⏹ Detener</button>
+    </div>
+  </div>
+
+  <div class="preview-card" id="preview-card">
+    <video id="preview-video" controls></video>
+    <div class="preview-actions">
+      <button class="act-btn download" onclick="downloadVideo()">⬇️ Descargar video</button>
+      <button class="act-btn tutorial" onclick="makeTutorial()">✨ Generar tutorial desde este video</button>
+    </div>
+  </div>
+
+  <!-- Upload Zoom / existing video -->
+  <div class="upload-card">
+    <div class="upload-title">📹 O subí un video existente (Zoom, Teams, etc.)</div>
+    <div class="upload-area" onclick="document.getElementById('video-input').click()">
+      <div class="upload-icon">📁</div>
+      <div class="upload-hint">Arrastrá un video o <span>hacé click para subir</span></div>
+      <div class="upload-hint" style="margin-top:4px">MP4, WebM, MOV — hasta 500 MB</div>
+    </div>
+    <input type="file" id="video-input" accept="video/*" style="display:none" onchange="handleVideoUpload(this)">
+    <div class="file-preview" id="file-preview">
+      <video id="upload-preview" controls style="width:100%;border-radius:8px;margin-top:12px;background:#000;max-height:240px"></video>
+      <div style="display:flex;gap:10px;margin-top:10px">
+        <button class="act-btn tutorial" onclick="makeUploadTutorial()">✨ Generar tutorial desde este video</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let mediaRecorder = null;
+let recordedChunks = [];
+let recordingInterval = null;
+let recordingSeconds = 0;
+let isPaused = false;
+let recordedBlob = null;
+let uploadedVideoFile = null;
+
+async function toggleRecording() {
+  const btn = document.getElementById('rec-btn');
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    stopRecording(); return;
+  }
+  try {
+    const qualityMap = { high:{width:1920,height:1080}, medium:{width:1280,height:720}, low:{width:854,height:480} };
+    const quality = qualityMap[document.getElementById('quality-opt').value];
+    const audioOpt = document.getElementById('audio-opt').value;
+
+    const displayStream = await navigator.mediaDevices.getDisplayMedia({
+      video: { width:quality.width, height:quality.height, frameRate:30 },
+      audio: audioOpt === 'system' || audioOpt === 'both'
+    });
+
+    let audioTracks = [];
+    if (audioOpt === 'mic' || audioOpt === 'both') {
+      try {
+        const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioTracks = micStream.getAudioTracks();
+      } catch {}
+    }
+
+    const tracks = [...displayStream.getTracks(), ...audioTracks];
+    const combinedStream = new MediaStream(tracks);
+
+    recordedChunks = [];
+    mediaRecorder = new MediaRecorder(combinedStream, { mimeType: getSupportedMimeType() });
+    mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+    mediaRecorder.onstop = onRecordingStop;
+    mediaRecorder.start(1000);
+
+    // Handle stream end (user stops share)
+    displayStream.getVideoTracks()[0].onended = () => stopRecording();
+
+    btn.className = 'rec-big-btn recording'; btn.textContent = '⏹';
+    document.getElementById('rec-status').textContent = 'Grabando pantalla...';
+    document.getElementById('pause-btn').disabled = false;
+    document.getElementById('stop-btn').disabled = false;
+    document.getElementById('preview-card').classList.remove('show');
+
+    recordingSeconds = 0;
+    recordingInterval = setInterval(() => {
+      if (!isPaused) {
+        recordingSeconds++;
+        const m = String(Math.floor(recordingSeconds/60)).padStart(2,'0');
+        const s = String(recordingSeconds%60).padStart(2,'0');
+        document.getElementById('rec-timer').textContent = m + ':' + s;
+      }
+    }, 1000);
+  } catch(e) {
+    if (e.name !== 'AbortError') {
+      document.getElementById('rec-status').textContent = 'Error: ' + e.message;
+    }
+  }
+}
+
+function togglePause() {
+  if (!mediaRecorder) return;
+  if (mediaRecorder.state === 'recording') {
+    mediaRecorder.pause(); isPaused = true;
+    document.getElementById('pause-btn').textContent = '▶ Reanudar';
+    document.getElementById('rec-btn').className = 'rec-big-btn paused';
+    document.getElementById('rec-btn').textContent = '⏸';
+    document.getElementById('rec-status').textContent = 'Grabación pausada';
+  } else if (mediaRecorder.state === 'paused') {
+    mediaRecorder.resume(); isPaused = false;
+    document.getElementById('pause-btn').textContent = '⏸ Pausar';
+    document.getElementById('rec-btn').className = 'rec-big-btn recording';
+    document.getElementById('rec-btn').textContent = '⏹';
+    document.getElementById('rec-status').textContent = 'Grabando pantalla...';
+  }
+}
+
+function stopRecording() {
+  clearInterval(recordingInterval);
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+    mediaRecorder.stream.getTracks().forEach(t => t.stop());
+  }
+  document.getElementById('rec-btn').className = 'rec-big-btn idle';
+  document.getElementById('rec-btn').textContent = '🎥';
+  document.getElementById('pause-btn').disabled = true;
+  document.getElementById('stop-btn').disabled = true;
+  document.getElementById('rec-status').textContent = 'Grabación finalizada';
+}
+
+function onRecordingStop() {
+  const mimeType = getSupportedMimeType();
+  recordedBlob = new Blob(recordedChunks, { type: mimeType });
+  const url = URL.createObjectURL(recordedBlob);
+  document.getElementById('preview-video').src = url;
+  document.getElementById('preview-card').classList.add('show');
+  document.getElementById('rec-status').textContent = '✓ Listo — duracion: ' + document.getElementById('rec-timer').textContent;
+}
+
+function downloadVideo() {
+  if (!recordedBlob) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(recordedBlob);
+  a.download = 'tutoriai-grabacion-' + Date.now() + '.webm';
+  a.click();
+}
+
+function makeTutorial() {
+  if (!recordedBlob) return;
+  const topic = prompt('¿Sobre qué es este video? (describe brevemente)');
+  if (!topic) return;
+  localStorage.setItem('tutoriai_video_topic', topic);
+  // Since we can't upload video to API yet, redirect to generar with topic pre-filled
+  localStorage.setItem('tutoriai_prefill', topic);
+  window.location.href = 'generar.html';
+}
+
+function handleVideoUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  uploadedVideoFile = file;
+  const url = URL.createObjectURL(file);
+  document.getElementById('upload-preview').src = url;
+  document.getElementById('file-preview').style.display = 'block';
+}
+
+function makeUploadTutorial() {
+  const topic = prompt('¿Sobre qué es este video? (describe brevemente el contenido)');
+  if (!topic) return;
+  localStorage.setItem('tutoriai_prefill', topic);
+  window.location.href = 'generar.html';
+}
+
+function getSupportedMimeType() {
+  const types = ['video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm','video/mp4'];
+  return types.find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm';
+}
+</script>
+</body>
+</html>
